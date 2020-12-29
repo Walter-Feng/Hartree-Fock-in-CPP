@@ -1,0 +1,8 @@
+//the path to the version.h file is relative to your build directory.
+#ifndef VERSION_H
+#define VERSION_H
+#include <string>
+
+const std::string gVERSION = "@HFINCPP_BUILD_VERSION@";
+
+#endif
