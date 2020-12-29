@@ -19,7 +19,7 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
         EXECUTE_PROCESS(
                 COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-                OUTPUT_VARIABLE "QUARTZ_BUILD_VERSION"
+                OUTPUT_VARIABLE "HFINCPP_BUILD_VERSION"
                 ERROR_QUIET
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
         MESSAGE( STATUS "Git version: ${HFINCPP_BUILD_VERSION}" )
@@ -35,6 +35,7 @@ CONFIGURE_FILE(
 
 include(GNUInstallDirs)
 
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 enable_testing()
@@ -42,8 +43,15 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(libHFINCPP
-        src/main.cpp
+        src/run.cpp
         )
+
+
+add_executable(hfincpp
+
+        src/run.cpp
+)
+
 
 ####################
 #  find Libraries  #
