@@ -1,5 +1,5 @@
-#ifndef EXE_UTIL_PTREE_H
-#define EXE_UTIL_PTREE_H
+#ifndef UTIL_PTREE_H
+#define UTIL_PTREE_H
 
 #include <armadillo>
 #include <boost/property_tree/ptree.hpp>
@@ -283,4 +283,4 @@ auto put(ptree::ptree & result, const std::string & path,
 }
 }
 
-#endif //EXE_UTIL_PTREE_H
+#endif //UTIL_PTREE_H

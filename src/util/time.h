@@ -1,5 +1,5 @@
-#ifndef EXE_UTIL_TIME_H
-#define EXE_UTIL_TIME_H
+#ifndef UTIL_TIME_H
+#define UTIL_TIME_H
 
 #include <chrono>
 
@@ -31,4 +31,4 @@ public:
 };
 }
 
-#endif //EXE_UTIL_TIME_H
+#endif //UTIL_TIME_H

@@ -48,8 +48,7 @@ add_library(libHFINCPP
 
 
 add_executable(hfincpp
-
-        src/run.cpp
+        src/main.cpp
 )
 
 
