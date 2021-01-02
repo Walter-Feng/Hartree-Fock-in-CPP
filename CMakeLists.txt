@@ -45,6 +45,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_library(libHFINCPP
         src/run.cpp
+
+        src/basis/basis.cpp
+
+        src/geometry/geometry.cpp
+
+        src/integral/homebrew.cpp
         )
 
 
@@ -52,7 +58,7 @@ add_executable(hfincpp
         src/main.cpp
 )
 
-
+target_link_libraries(hfincpp libHFINCPP)
 ####################
 #  find Libraries  #
 ####################
@@ -107,6 +113,9 @@ find_package(
 )
 
 include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
+target_link_libraries(libHFINCPP ${GSL_LIBRARIES})
+
+######Boost######
 
 find_package(
         Boost
@@ -114,8 +123,17 @@ find_package(
         REQUIRED
 )
 
-######Boost######
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+target_link_libraries(libHFINCPP ${Boost_LIBRARIES})
+
+######LIBINT######
+find_package(
+        Libint2
+        2.6.0
+        REQUIRED
+)
+include_directories(SYSTEM ${LIBINT2_INCLUDE_DIRS})
+target_link_libraries(libHFINCPP ${LIBINT2_LIBRARIES})
 
 
 ################################
@@ -134,7 +152,7 @@ target_include_directories(catch2 PUBLIC external/Catch2/)
 message("\n This is {fmt} library.")
 add_subdirectory(external/fmt)
 include_directories("external/fmt/include")
-target_link_libraries(libHFINCPP fmt::fmt-header-only)
+target_link_libraries(libHFINCPP)
 add_definitions(-DHAVE_FMT)
 message("\n")
 

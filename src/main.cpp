@@ -48,11 +48,11 @@ int main(const int argc, const char * argv[]) {
 
   ///////////////////// Read Input File /////////////////////
 
-  ptree::ptree input;
+  const ptree::ptree input;
 
   ptree::read_json(args::get(input_flag), input);
 
-  ptree::ptree result = run(input);
+  ptree::ptree result = hfincpp::run(input);
 
   if (input.get_optional<std::string>("json")) {
     result.put<double>("time_elapsed", global_time.elapsed());

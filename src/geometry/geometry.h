@@ -8,7 +8,7 @@
 namespace hfincpp {
 
 namespace geometry {
-  struct atoms {
+  struct Atoms {
 
     std::vector<std::string> symbols;
     arma::uvec atomic_numbers;
@@ -17,7 +17,7 @@ namespace geometry {
   };
 
   struct geometry {
-    atoms atoms;
+    Atoms atoms;
     int charge;
 
     //(TODO) Point Group
