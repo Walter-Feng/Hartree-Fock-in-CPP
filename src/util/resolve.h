@@ -6,6 +6,7 @@ namespace hfincpp {
 namespace util {
 
 namespace ptree = boost::property_tree;
+
 template<typename T>
     T resolve(const ptree::ptree & pt);
 
