@@ -1,8 +1,9 @@
 #include "run.h"
-
+#include "util/json.h"
+#include "geometry/resolve.h"
 namespace hfincpp {
 
-ptree::ptree run(const ptree::ptree & input) {
+nlohmann::json run(const nlohmann::json & input) {
   return {};
 }
 

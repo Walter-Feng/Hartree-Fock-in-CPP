@@ -152,7 +152,7 @@ target_include_directories(catch2 PUBLIC external/Catch2/)
 message("\n This is {fmt} library.")
 add_subdirectory(external/fmt)
 include_directories("external/fmt/include")
-target_link_libraries(libHFINCPP)
+target_link_libraries(libHFINCPP fmt)
 add_definitions(-DHAVE_FMT)
 message("\n")
 
@@ -161,6 +161,11 @@ add_subdirectory(external/args)
 include_directories("external/args")
 target_link_libraries(libHFINCPP args)
 add_definitions(-DHAVE_ARGS)
+
+
+########json#########
+add_subdirectory(external/json)
+include_directories(external/json/single_include)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 

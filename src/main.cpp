@@ -4,8 +4,7 @@
 #include <armadillo>
 #include <iostream>
 #include <fmt/core.h>
-#include <boost/property_tree/ptree.hpp>
-#include "util/json_parser.h"
+#include <nlohmann/json.hpp>
 
 #include "run.h"
 #include "util/time.h"
@@ -16,8 +15,6 @@ int main(const int argc, const char * argv[]) {
   using namespace hfincpp;
 
   Timer global_time;
-
-  namespace ptree = boost::property_tree;
 
   args::ArgumentParser parser("This is the executable of a Hartree-Fock Program"
                               "using full C++ standard."
@@ -48,16 +45,12 @@ int main(const int argc, const char * argv[]) {
 
   ///////////////////// Read Input File /////////////////////
 
-  const ptree::ptree input;
 
-  ptree::read_json(args::get(input_flag), input);
+  std::ifstream input_file_stream(args::get(input_flag));
+  nlohmann::json input;
+  input_file_stream >> input;
 
-  ptree::ptree result = hfincpp::run(input);
-
-  if (input.get_optional<std::string>("json")) {
-    result.put<double>("time_elapsed", global_time.elapsed());
-    ptree::write_json(input.get<std::string>("json"), result);
-  }
+  nlohmann::json result = run(input);
 
   fmt::print("Total time elapsed: {} s\n", global_time.elapsed());
 

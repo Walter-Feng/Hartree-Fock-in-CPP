@@ -1,13 +1,11 @@
 #ifndef HFINCPP_RUN_H
 #define HFINCPP_RUN_H
 
-#include <boost/property_tree/ptree.hpp>
+#include <nlohmann/json.hpp>
 
 namespace hfincpp {
 
-namespace ptree = boost::property_tree;
-
-ptree::ptree run(const ptree::ptree & input);
+nlohmann::json run(const nlohmann::json & input);
 
 }
 

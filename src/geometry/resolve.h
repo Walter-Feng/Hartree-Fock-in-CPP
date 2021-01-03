@@ -1,7 +1,7 @@
 #ifndef GEOMETRY_RESOLVE_H
 #define GEOMETRY_RESOLVE_H
 
-#include <boost/property_tree/ptree.hpp>
+#include <nlohmann/json.hpp>
 #include "geometry.h"
 #include "periodic_table.h"
 
@@ -11,40 +11,31 @@
 namespace hfincpp {
 namespace util {
 
-namespace ptree = boost::property_tree;
-
 template<>
-geometry::geometry resolve(const ptree::ptree & pt) {
+geometry::geometry resolve(const nlohmann::json & pt) {
 
   std::vector<std::string> symbols;
   std::vector<arma::uword> atomic_numbers;
   std::vector<double> coordinates;
 
-  const int charge = pt.get<int>("charge");
+  const int charge = pt.at("charge");
 
   for (const auto & line : pt) {
 
     int unit_index = 0;
 
-    for(const auto & unit : line.second) {
+    for(const auto & unit : line) {
       if(unit_index == 0) {
 
-        const auto atom_symbol = unit.second.get_value_optional<std::string>();
+        const auto atom_symbol = unit.get<std::string>();
 
-        if (!atom_symbol) {
-          throw Error("Error reading atom symbol");
-        }
+        symbols.push_back(atom_symbol);
 
-        symbols.push_back(atom_symbol.value());
-
-        atomic_numbers.push_back(geometry::periodic_table.at(atom_symbol.value()));
+        atomic_numbers.push_back(geometry::periodic_table.at(atom_symbol));
 
       } else {
-        const auto coordinate = unit.second.get_value_optional<double>();
-        if (!coordinate) {
-          throw Error("Error reading atom coordinates");
-        }
-        coordinates.push_back(coordinate.value());
+        const auto coordinate = unit.get<double>();
+        coordinates.push_back(coordinate);
       }
 
       unit_index++;
@@ -54,7 +45,7 @@ geometry::geometry resolve(const ptree::ptree & pt) {
 
   const arma::mat xyz = arma::reshape(arma::vec(coordinates), 3, symbols.size());
 
-  const geometry::atoms atoms = {symbols, arma::uvec{atomic_numbers}, xyz};
+  const geometry::Atoms atoms = {symbols, arma::uvec{atomic_numbers}, xyz};
 
   return {atoms, charge};
 
