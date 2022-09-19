@@ -51,6 +51,7 @@ add_library(libHFINCPP
         src/geometry/geometry.cpp
 
         src/integral/homebrew.cpp
+        src/integral/rys_quadrature.cpp
         )
 
 
@@ -126,15 +127,6 @@ find_package(
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 target_link_libraries(libHFINCPP ${Boost_LIBRARIES})
 
-######LIBINT######
-find_package(
-        Libint2
-        2.6.0
-        REQUIRED
-)
-include_directories(SYSTEM ${LIBINT2_INCLUDE_DIRS})
-target_link_libraries(libHFINCPP ${LIBINT2_LIBRARIES})
-
 
 ################################
 #  Compile external libraries  #
@@ -163,9 +155,9 @@ target_link_libraries(libHFINCPP args)
 add_definitions(-DHAVE_ARGS)
 
 
-########json#########
-add_subdirectory(external/json)
-include_directories(external/json/single_include)
+#########json#########
+#add_subdirectory(external/json)
+#include_directories(external/json/single_include)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
