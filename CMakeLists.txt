@@ -44,7 +44,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(libHFINCPP
-        src/run.cpp
+#        src/run.cpp
 
         src/basis/basis.cpp
 
@@ -55,11 +55,11 @@ add_library(libHFINCPP
         )
 
 
-add_executable(hfincpp
-        src/main.cpp
-)
+#add_executable(hfincpp
+#        src/main.cpp
+#)
 
-target_link_libraries(hfincpp libHFINCPP)
+#target_link_libraries(hfincpp libHFINCPP)
 ####################
 #  find Libraries  #
 ####################
@@ -171,3 +171,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 ####################
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test)
+
+add_executable(test_integral
+        src/integral/rys_quadrature_unit_test.cpp
+        )
+
+target_link_libraries(test_integral catch2 libHFINCPP)
