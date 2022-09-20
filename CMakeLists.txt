@@ -154,6 +154,12 @@ include_directories("external/args")
 target_link_libraries(libHFINCPP args)
 add_definitions(-DHAVE_ARGS)
 
+########libcint#########
+add_subdirectory(external/libcint)
+include_directories("external/libcint/src")
+target_link_libraries(libHFINCPP libcint)
+add_definitions(-DHAVE_LIBCINT)
+
 
 #########json#########
 #add_subdirectory(external/json)

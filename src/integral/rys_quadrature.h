@@ -15,6 +15,24 @@ struct RysPolynomial {
 
 };
 
+
+struct ERI {
+  arma::vec3 A_coord;
+  arma::vec3 B_coord;
+  arma::vec3 C_coord;
+  arma::vec3 D_coord;
+
+  arma::Col<int> A_angular;
+  arma::Col<int> B_angular;
+  arma::Col<int> C_angular;
+  arma::Col<int> D_angular;
+
+  double A_exponent;
+  double B_exponent;
+  double C_exponent;
+  double D_exponent;
+};
+
 struct IntegralInfo {
   RysPolynomial polynomial;
 
@@ -47,9 +65,11 @@ struct IntegralInfo {
   vertical_recursion_relation_c() const;
 };
 
+
 std::vector<IntegralInfo> horizontal_recursion_relation(const std::vector<IntegralInfo> & info);
 std::vector<IntegralInfo> vertical_recursion_relation(const std::vector<IntegralInfo> & info);
 RysPolynomial reduce_to_rys_polynomial(const IntegralInfo & info);
+double electron_repulsive_integral(const ERI & eri_info);
 }
 }
 
