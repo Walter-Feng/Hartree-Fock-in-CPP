@@ -1,5 +1,5 @@
 #include "rys_quadrature.h"
-
+#include <cassert>
 #include <armadillo>
 
 namespace integral::rys_quadrature {
