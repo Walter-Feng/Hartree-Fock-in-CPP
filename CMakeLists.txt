@@ -157,7 +157,8 @@ add_definitions(-DHAVE_ARGS)
 ########libcint#########
 add_subdirectory(external/libcint)
 include_directories("external/libcint/src")
-target_link_libraries(libHFINCPP libcint)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/external/libcint/src)
+target_link_libraries(libHFINCPP cint)
 add_definitions(-DHAVE_LIBCINT)
 
 

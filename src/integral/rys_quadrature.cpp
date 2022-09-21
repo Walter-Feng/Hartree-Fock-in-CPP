@@ -2,7 +2,9 @@
 #include <cassert>
 #include <armadillo>
 
-#include <rys_roots.h>
+extern "C" {
+  #include <rys_roots.h>
+}
 
 namespace integral::rys_quadrature {
 

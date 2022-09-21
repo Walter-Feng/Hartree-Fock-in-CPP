@@ -3,8 +3,7 @@
 #include <gsl/gsl_sf.h>
 #include <cmath>
 
-namespace hfincpp {
-namespace integral {
+namespace integral::obara_saika {
 
 // Calculate the complete Gamma function
 double Gamma(double z) {
@@ -369,12 +368,5 @@ ZIntegral(double ra[3], double rb[3], double rz[3], int ax, int ay, int az,
   else
     return 2 * M_PI / (alpha + beta) * exp(-alpha * beta / zeta * AB) *
            Boys((alpha + beta) * PC, m);
-}
-
-HomebrewEngine::HomebrewEngine(const basis::Basis & basis) {
-
-}
-
-
 }
 }

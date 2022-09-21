@@ -63,29 +63,50 @@ TEST_CASE("Check Rys quadrature integral implementation") {
     }
   }
 
+//  SECTION("Reduce to Rys Polynomial") {
+//    using namespace integral::rys_quadrature;
+//    IntegralInfo info;
+//    info.polynomial = RysPolynomial{arma::vec{1.0}};
+//    info.a = 3;
+//    info.b = 4;
+//    info.c = 2;
+//    info.d = 5;
+//
+//    info.p = 1;
+//    info.P = 6;
+//    info.q = 1;
+//    info.Q = 9;
+//
+//    info.A = 0.0;
+//    info.B = 1.5;
+//    info.C = 2.0;
+//    info.D = 5.0;
+//
+//    const auto result = reduce_to_rys_polynomial(info);
+//  }
+
+
   SECTION("Reduce to Rys Polynomial") {
     using namespace integral::rys_quadrature;
-    IntegralInfo info;
-    info.polynomial = RysPolynomial{arma::vec{1.0}};
-    info.a = 3;
-    info.b = 4;
-    info.c = 2;
-    info.d = 5;
+    ERI eri;
+    eri.A_coord = {0.0, 0.0, 0.0};
+    eri.A_angular = {0, 0, 0};
+    eri.A_exponent = 1.0;
 
-    info.p = 1;
-    info.P = 6;
-    info.q = 1;
-    info.Q = 9;
+    eri.B_coord = {1.0, 0.0, 0.0};
+    eri.B_angular = {0, 0, 0};
+    eri.B_exponent = 2.0;
 
-    info.A = 0.0;
-    info.B = 1.5;
-    info.C = 2.0;
-    info.D = 5.0;
+    eri.C_coord = {2.0, 0.0, 0.0};
+    eri.C_angular = {0, 0, 0};
+    eri.C_exponent = 3.0;
 
-    const auto result = reduce_to_rys_polynomial(info);
+    eri.D_coord = {3.0, 0.0, 0.0};
+    eri.D_angular = {0, 0, 0};
+    eri.D_exponent = 4.0;
 
-    std::cout << result.coef << std::endl;
+    const double eri_integral = electron_repulsive_integral(eri);
+
+    std::cout << eri_integral << std::endl;
   }
-
-
 }
