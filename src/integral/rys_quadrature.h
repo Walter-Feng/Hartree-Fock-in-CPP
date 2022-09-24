@@ -1,7 +1,7 @@
 #ifndef INTEGRAL_RYS_QUADRATURE_H
 #define INTEGRAL_RYS_QUADRATURE_H
 
-#include <armadillo>
+#include "integral.h"
 
 namespace integral {
 namespace rys_quadrature {
@@ -13,24 +13,6 @@ struct RysPolynomial {
   RysPolynomial operator*(double factor) const;
   RysPolynomial operator*(const RysPolynomial & another) const;
 
-};
-
-
-struct ERI {
-  arma::vec3 A_coord;
-  arma::vec3 B_coord;
-  arma::vec3 C_coord;
-  arma::vec3 D_coord;
-
-  arma::Col<int> A_angular;
-  arma::Col<int> B_angular;
-  arma::Col<int> C_angular;
-  arma::Col<int> D_angular;
-
-  double A_exponent;
-  double B_exponent;
-  double C_exponent;
-  double D_exponent;
 };
 
 struct IntegralInfo {

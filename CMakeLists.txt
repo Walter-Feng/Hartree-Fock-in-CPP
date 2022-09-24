@@ -50,7 +50,8 @@ add_library(libHFINCPP
 
         src/geometry/geometry.cpp
 
-        src/integral/homebrew.cpp
+        src/integral/integral.cpp
+        src/integral/obara_saika.cpp
         src/integral/rys_quadrature.cpp
         )
 
@@ -180,6 +181,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test)
 
 add_executable(test_integral
+        src/integral/obara_saika_unit_test.cpp
         src/integral/rys_quadrature_unit_test.cpp
         )
 

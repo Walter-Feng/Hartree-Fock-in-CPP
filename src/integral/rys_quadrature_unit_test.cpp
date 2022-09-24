@@ -1,6 +1,7 @@
 #include <catch.hpp>
 
 #include "rys_quadrature.h"
+#include "obara_saika.h"
 
 TEST_CASE("Check Rys quadrature integral implementation") {
 
@@ -26,7 +27,7 @@ TEST_CASE("Check Rys quadrature integral implementation") {
     const auto result = horizontal_recursion_relation({info});
 
     CHECK(result.size() == std::pow(2, info.b) * std::pow(2, info.d));
-    for(auto info_i : result) {
+    for (auto info_i: result) {
       CHECK(info_i.b == 0);
       CHECK(info_i.d == 0);
 
@@ -55,7 +56,7 @@ TEST_CASE("Check Rys quadrature integral implementation") {
 
     const auto result = vertical_recursion_relation({info});
 
-    for(const auto & i_info : result) {
+    for (const auto & i_info: result) {
       CHECK(i_info.a == 0);
       CHECK(i_info.b == 0);
       CHECK(i_info.c == 0);
@@ -88,25 +89,37 @@ TEST_CASE("Check Rys quadrature integral implementation") {
 
   SECTION("Reduce to Rys Polynomial") {
     using namespace integral::rys_quadrature;
-    ERI eri;
-    eri.A_coord = {0.0, 0.0, 0.0};
-    eri.A_angular = {0, 0, 0};
-    eri.A_exponent = 1.0;
 
-    eri.B_coord = {1.0, 0.0, 0.0};
-    eri.B_angular = {0, 0, 0};
-    eri.B_exponent = 2.0;
+    integral::GaussianFunction A;
+    A.center = {0.0, 0.0, 0.0};
+    A.angular = {0, 1, 1};
+    A.exponent = 1.0;
+    A.coef = 1.0;
 
-    eri.C_coord = {2.0, 0.0, 0.0};
-    eri.C_angular = {0, 0, 0};
-    eri.C_exponent = 3.0;
+    integral::GaussianFunction B;
+    B.center = {0.5, 0.6, 0.7};
+    B.angular = {1, 2, 0};
+    B.exponent = 2.0;
+    B.coef = 1.0;
 
-    eri.D_coord = {3.0, 0.0, 0.0};
-    eri.D_angular = {0, 0, 0};
-    eri.D_exponent = 4.0;
+    integral::GaussianFunction C;
+    C.center = {0.9, 1.0, 1.1};
+    C.angular = {2, 1, 1};
+    C.exponent = 3.0;
+    C.coef = 1.0;
+
+    integral::GaussianFunction D;
+    D.center = {1.0, 0.9, 0.8};
+    D.angular = {1, 1, 0};
+    D.exponent = 4.0;
+    D.coef = 1.0;
+
+    integral::ERI eri{A, B, C, D};
+
+    integral::ERI eri_prime{A, B, C, D};
 
     const double eri_integral = electron_repulsive_integral(eri);
 
-    std::cout << eri_integral << std::endl;
+    CHECK(std::abs(eri_integral + 7.486283316104355e-08) < 1e-12);
   }
 }

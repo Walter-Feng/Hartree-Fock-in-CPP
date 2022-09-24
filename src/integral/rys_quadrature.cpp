@@ -3,7 +3,7 @@
 #include <armadillo>
 
 extern "C" {
-  #include <rys_roots.h>
+#include <rys_roots.h>
 }
 
 namespace integral::rys_quadrature {
@@ -133,7 +133,7 @@ IntegralInfo::vertical_recursion_relation_c() const {
     // The third term, c * B_01 * I (a, 0, c-1, 0, t) is eliminated
     auto term_1 = *this;
     const RysPolynomial D_00 = {arma::vec{term_1.Q - term_1.C,
-                                          -term_1.p * (term_1.P - term_1.Q) /
+                                          + term_1.p * (term_1.P - term_1.Q) /
                                           (term_1.p + term_1.q)}};
 
     term_1.c--;
@@ -155,7 +155,7 @@ IntegralInfo::vertical_recursion_relation_c() const {
     // The third term, c * B_01 * I (a, 0, c-1, 0, t) is eliminated
     auto term_1 = *this;
     const RysPolynomial D_00 = {arma::vec{term_1.Q - term_1.C,
-                                          -term_1.p * (term_1.P - term_1.Q) /
+                                          + term_1.p * (term_1.P - term_1.Q) /
                                           (term_1.p + term_1.q)}};
 
     term_1.c--;
@@ -173,11 +173,11 @@ IntegralInfo::vertical_recursion_relation_c() const {
       return {term_1, term_3};
     } else {
       auto term_2 = *this;
-      const RysPolynomial B_00 = {arma::vec{0, 0.5 / (term_1.p + term_1.q)}};
+      const RysPolynomial B_00 = {arma::vec{0, 0.5 / (term_2.p + term_2.q)}};
 
       term_2.c--;
-      term_2.a--;
       term_2.polynomial = term_2.polynomial * B_00 * term_2.a;
+      term_2.a--;
 
       return {term_1, term_2, term_3};
     }
@@ -251,24 +251,24 @@ reduce_to_rys_polynomial(const IntegralInfo & info) {
 }
 
 double electron_repulsive_integral(const ERI & eri_info) {
-  const double p = eri_info.A_exponent + eri_info.B_exponent;
+  const double p = eri_info.A.exponent + eri_info.B.exponent;
   const arma::vec3 P =
-      (eri_info.A_exponent * eri_info.A_coord +
-       eri_info.B_exponent * eri_info.A_coord) / p;
-  const arma::vec3 from_B_to_A = eri_info.A_coord - eri_info.B_coord;
+      (eri_info.A.exponent * eri_info.A.center +
+       eri_info.B.exponent * eri_info.B.center) / p;
+  const arma::vec3 from_B_to_A = eri_info.A.center - eri_info.B.center;
 
   const double exponential_prefactor_AB = std::exp(
-      -eri_info.A_exponent * eri_info.B_exponent / p *
+      -eri_info.A.exponent * eri_info.B.exponent / p *
       arma::dot(from_B_to_A, from_B_to_A));
 
-  const double q = eri_info.C_exponent + eri_info.D_exponent;
+  const double q = eri_info.C.exponent + eri_info.D.exponent;
   const arma::vec3 Q =
-      (eri_info.C_exponent * eri_info.C_coord +
-       eri_info.D_exponent * eri_info.D_coord) / q;
-  const arma::vec3 from_D_to_C = eri_info.C_coord - eri_info.D_coord;
+      (eri_info.C.exponent * eri_info.C.center +
+       eri_info.D.exponent * eri_info.D.center) / q;
+  const arma::vec3 from_D_to_C = eri_info.C.center - eri_info.D.center;
 
   const double exponential_prefactor_CD = std::exp(
-      -eri_info.C_exponent * eri_info.D_exponent / q *
+      -eri_info.C.exponent * eri_info.D.exponent / q *
       arma::dot(from_D_to_C, from_D_to_C));
 
   const double rho = p * q / (p + q);
@@ -276,26 +276,26 @@ double electron_repulsive_integral(const ERI & eri_info) {
   const double T = rho * arma::dot(from_Q_to_P, from_Q_to_P);
 
   const IntegralInfo I_x{{arma::vec{1.0}},
-                         eri_info.A_angular[0],
-                         eri_info.B_angular[0],
-                         eri_info.C_angular[0],
-                         eri_info.D_angular[0],
+                         eri_info.A.angular[0],
+                         eri_info.B.angular[0],
+                         eri_info.C.angular[0],
+                         eri_info.D.angular[0],
                          p, P[0], q, Q[0],
-                         eri_info.A_coord[0],
-                         eri_info.B_coord[0],
-                         eri_info.C_coord[0],
-                         eri_info.D_coord[0]};
+                         eri_info.A.center[0],
+                         eri_info.B.center[0],
+                         eri_info.C.center[0],
+                         eri_info.D.center[0]};
 
   const IntegralInfo I_y{{arma::vec{1.0}},
-                         eri_info.A_angular[1],
-                         eri_info.B_angular[1],
-                         eri_info.C_angular[1],
-                         eri_info.D_angular[1],
+                         eri_info.A.angular[1],
+                         eri_info.B.angular[1],
+                         eri_info.C.angular[1],
+                         eri_info.D.angular[1],
                          p, P[1], q, Q[1],
-                         eri_info.A_coord[1],
-                         eri_info.B_coord[1],
-                         eri_info.C_coord[1],
-                         eri_info.D_coord[1]};
+                         eri_info.A.center[1],
+                         eri_info.B.center[1],
+                         eri_info.C.center[1],
+                         eri_info.D.center[1]};
 
 
   const double prefactor_for_eri =
@@ -303,15 +303,15 @@ double electron_repulsive_integral(const ERI & eri_info) {
       exponential_prefactor_AB * exponential_prefactor_CD;
 
   const IntegralInfo I_z{{arma::vec{prefactor_for_eri}},
-                         eri_info.A_angular[2],
-                         eri_info.B_angular[2],
-                         eri_info.C_angular[2],
-                         eri_info.D_angular[2],
+                         eri_info.A.angular[2],
+                         eri_info.B.angular[2],
+                         eri_info.C.angular[2],
+                         eri_info.D.angular[2],
                          p, P[2], q, Q[2],
-                         eri_info.A_coord[2],
-                         eri_info.B_coord[2],
-                         eri_info.C_coord[2],
-                         eri_info.D_coord[2]};
+                         eri_info.A.center[2],
+                         eri_info.B.center[2],
+                         eri_info.C.center[2],
+                         eri_info.D.center[2]};
 
   const RysPolynomial I_z_polynomial = reduce_to_rys_polynomial(I_z);
   const RysPolynomial I_x_polynomial = reduce_to_rys_polynomial(I_x);
@@ -333,6 +333,10 @@ double electron_repulsive_integral(const ERI & eri_info) {
     sum += multiplied(t_squared[i]) * w[i];
   }
 
-  return sum;
+  return sum
+         * eri_info.A.coef
+         * eri_info.B.coef
+         * eri_info.C.coef
+         * eri_info.D.coef;
 }
 }

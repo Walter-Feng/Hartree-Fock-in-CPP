@@ -8,11 +8,18 @@
 namespace hfincpp {
 namespace basis {
 
+struct GTOFunction {
+  arma::vec3 center;
+  arma::Col<int>::fixed<3> angular;
+  arma::vec exponents;
+  arma::vec coefs;
+};
+
 struct GTOShell {
   arma::vec3 center;
-  std::vector<std::pair<arma::ivec3, double>> angular_momentum;
-  arma::vec GTO_alpha;
-  arma::vec GTO_coef;
+  std::vector<std::pair<arma::Col<int>::fixed<3>, double>> angular_momentum;
+  arma::vec exponents;
+  arma::vec coefs;
   std::string atom_symbol;
   int atom_number;
 
