@@ -23,6 +23,7 @@ struct IntegralInfo {
   int c;
   int d;
 
+
   double p;
   double P;
 
@@ -33,6 +34,16 @@ struct IntegralInfo {
   double B;
   double C;
   double D;
+
+  double alpha; // exponent of A
+  double beta; // exponent of B
+  double gamma; // exponent of C
+  double delta; // exponent of D
+
+  int grad_a = 0;
+  int grad_b = 0;
+  int grad_c = 0;
+  int grad_d = 0;
 
   [[nodiscard]] std::vector<IntegralInfo>
   horizontal_recursion_relation_b_to_a() const;
@@ -50,8 +61,12 @@ struct IntegralInfo {
 
 std::vector<IntegralInfo> horizontal_recursion_relation(const std::vector<IntegralInfo> & info);
 std::vector<IntegralInfo> vertical_recursion_relation(const std::vector<IntegralInfo> & info);
-RysPolynomial reduce_to_rys_polynomial(const IntegralInfo & info);
 double electron_repulsive_integral(const ERI & eri_info);
+
+namespace gradient {
+double electron_repulsive_integral(const ERI & eri_info,
+                                   const arma::Mat<int>::fixed<3, 4> & derivative_operator);
+}
 }
 }
 
