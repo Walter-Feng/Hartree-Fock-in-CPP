@@ -133,7 +133,7 @@ IntegralInfo::vertical_recursion_relation_c() const {
     // The third term, c * B_01 * I (a, 0, c-1, 0, t) is eliminated
     auto term_1 = *this;
     const RysPolynomial D_00 = {arma::vec{term_1.Q - term_1.C,
-                                          + term_1.p * (term_1.P - term_1.Q) /
+                                          +term_1.p * (term_1.P - term_1.Q) /
                                           (term_1.p + term_1.q)}};
 
     term_1.c--;
@@ -155,7 +155,7 @@ IntegralInfo::vertical_recursion_relation_c() const {
     // The third term, c * B_01 * I (a, 0, c-1, 0, t) is eliminated
     auto term_1 = *this;
     const RysPolynomial D_00 = {arma::vec{term_1.Q - term_1.C,
-                                          + term_1.p * (term_1.P - term_1.Q) /
+                                          +term_1.p * (term_1.P - term_1.Q) /
                                           (term_1.p + term_1.q)}};
 
     term_1.c--;
@@ -233,6 +233,7 @@ vertical_recursion_relation(const std::vector<IntegralInfo> & info) {
 
 }
 
+
 RysPolynomial
 reduce_to_rys_polynomial(const IntegralInfo & info) {
   const auto reduced = vertical_recursion_relation(
@@ -284,7 +285,11 @@ double electron_repulsive_integral(const ERI & eri_info) {
                          eri_info.A.center[0],
                          eri_info.B.center[0],
                          eri_info.C.center[0],
-                         eri_info.D.center[0]};
+                         eri_info.D.center[0],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent};
 
   const IntegralInfo I_y{{arma::vec{1.0}},
                          eri_info.A.angular[1],
@@ -295,7 +300,11 @@ double electron_repulsive_integral(const ERI & eri_info) {
                          eri_info.A.center[1],
                          eri_info.B.center[1],
                          eri_info.C.center[1],
-                         eri_info.D.center[1]};
+                         eri_info.D.center[1],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent};
 
 
   const double prefactor_for_eri =
@@ -311,11 +320,448 @@ double electron_repulsive_integral(const ERI & eri_info) {
                          eri_info.A.center[2],
                          eri_info.B.center[2],
                          eri_info.C.center[2],
-                         eri_info.D.center[2]};
+                         eri_info.D.center[2],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent};
 
   const RysPolynomial I_z_polynomial = reduce_to_rys_polynomial(I_z);
   const RysPolynomial I_x_polynomial = reduce_to_rys_polynomial(I_x);
   const RysPolynomial I_y_polynomial = reduce_to_rys_polynomial(I_y);
+
+  const RysPolynomial multiplied =
+      I_x_polynomial * I_y_polynomial * I_z_polynomial;
+  const int n_rys_roots = (multiplied.coef.n_elem + 1) / 2;
+
+  arma::vec u(n_rys_roots);
+  arma::vec w(n_rys_roots);
+
+  CINTrys_roots(n_rys_roots, T, u.memptr(), w.memptr());
+
+  const arma::vec t_squared = u / (u + 1.0);
+
+  double sum = 0;
+  for (int i = 0; i < n_rys_roots; i++) {
+    sum += multiplied(t_squared[i]) * w[i];
+  }
+
+  return sum
+         * eri_info.A.coef
+         * eri_info.B.coef
+         * eri_info.C.coef
+         * eri_info.D.coef;
+}
+}
+
+namespace integral::rys_quadrature::nuclear_attraction {
+
+std::vector<IntegralInfo>
+IntegralInfo::horizontal_recursion_relation() const {
+  if (b == 0) {
+    return {};
+  } else {
+    auto term_1 = *this;
+    auto term_2 = *this;
+    term_1.a++;
+    term_1.b--;
+    term_2.polynomial = term_2.polynomial * (term_2.A - term_2.B);
+    term_2.b--;
+
+    return {term_1, term_2};
+  }
+}
+
+std::vector<IntegralInfo>
+IntegralInfo::vertical_recursion_relation() const {
+  assert(this->b <= 0);
+
+  if (a <= 0) {
+    return {};
+  } else if (a == 1) {
+    auto term_1 = *this;
+    const RysPolynomial R_1x = {
+        arma::vec{term_1.P - term_1.A, -(term_1.P - term_1.C)}};
+    term_1.polynomial = term_1.polynomial * R_1x;
+    term_1.a--;
+    return {term_1};
+  } else {
+    auto term_1 = *this;
+    const RysPolynomial R_1x = {
+        arma::vec{term_1.P - term_1.A, -(term_1.P - term_1.C)}};
+    term_1.polynomial = term_1.polynomial * R_1x;
+    term_1.a--;
+    auto term_2 = *this;
+    const RysPolynomial R_2 = {arma::vec{0.5 / term_1.p, -0.5 / term_1.p}};
+    term_2.polynomial = term_2.polynomial * R_2;
+    term_2.a -= 2;
+    return {term_1, term_2};
+  }
+}
+
+std::vector<IntegralInfo>
+horizontal_recursion_relation(const std::vector<IntegralInfo> & info) {
+
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+    if (i_info.b > 0) {
+      const auto b_horiz = i_info.horizontal_recursion_relation();
+      const auto b_recursive = horizontal_recursion_relation(b_horiz);
+      result.insert(result.end(), b_recursive.begin(), b_recursive.end());
+
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+
+}
+
+std::vector<IntegralInfo>
+vertical_recursion_relation(const std::vector<IntegralInfo> & info) {
+
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+    assert(i_info.b == 0);
+    if (i_info.a > 0) {
+      const auto a_vert = i_info.vertical_recursion_relation();
+      const auto a_recursive = vertical_recursion_relation(a_vert);
+      result.insert(result.end(), a_recursive.begin(), a_recursive.end());
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+
+}
+
+RysPolynomial
+reduce_to_rys_polynomial(const IntegralInfo & info) {
+  const auto reduced = vertical_recursion_relation(
+      horizontal_recursion_relation({info}));
+
+  const int total_angular_momentum = info.a + info.b + 1;
+
+  RysPolynomial result = {arma::vec(total_angular_momentum, arma::fill::zeros)};
+
+  for (const auto & i_info: reduced) {
+    const arma::uword n_elem = i_info.polynomial.coef.n_elem;
+    result.coef(arma::span(0, n_elem - 1)) += i_info.polynomial.coef;
+  }
+
+  return result;
+}
+
+
+double electron_repulsive_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge) {
+  const double p = pair.first.exponent + pair.second.exponent;
+  const arma::vec3 P =
+      (pair.first.exponent * pair.first.center +
+       pair.second.exponent * pair.second.center) / p;
+  const arma::vec3 from_B_to_A = pair.first.center - pair.second.center;
+
+  const double exponential_prefactor_AB = std::exp(
+      -pair.first.exponent * pair.second.exponent / p *
+      arma::dot(from_B_to_A, from_B_to_A));
+
+  const double T = p * arma::sum(arma::square(P - core_center));
+
+  const IntegralInfo I_x{{arma::vec{1.0}},
+                         pair.first.angular[0],
+                         pair.second.angular[0],
+                         p, P[0],
+                         pair.first.center[0],
+                         pair.second.center[0],
+                         core_center[0],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+  const IntegralInfo I_y{{arma::vec{1.0}},
+                         pair.first.angular[1],
+                         pair.second.angular[1],
+                         p, P[1],
+                         pair.first.center[1],
+                         pair.second.center[1],
+                         core_center[1],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+
+  const double prefactor_for_nuclear_attraction_integral =
+      - charge * M_PI / p * exponential_prefactor_AB;
+
+  const IntegralInfo I_z{{arma::vec{prefactor_for_nuclear_attraction_integral}},
+                         pair.first.angular[2],
+                         pair.second.angular[2],
+                         p, P[2],
+                         pair.first.center[2],
+                         pair.second.center[2],
+                         core_center[2],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+  const RysPolynomial I_z_polynomial = reduce_to_rys_polynomial(I_z);
+  const RysPolynomial I_x_polynomial = reduce_to_rys_polynomial(I_x);
+  const RysPolynomial I_y_polynomial = reduce_to_rys_polynomial(I_y);
+
+  const RysPolynomial multiplied =
+      I_x_polynomial * I_y_polynomial * I_z_polynomial;
+  const int n_rys_roots = (multiplied.coef.n_elem + 1) / 2;
+
+  arma::vec u(n_rys_roots);
+  arma::vec w(n_rys_roots);
+
+  CINTrys_roots(n_rys_roots, T, u.memptr(), w.memptr());
+
+  const arma::vec t_squared = u / (u + 1.0);
+
+  double sum = 0;
+  for (int i = 0; i < n_rys_roots; i++) {
+    sum += multiplied(t_squared[i]) * w[i];
+  }
+
+  return sum * pair.first.coef * pair.second.coef;
+}
+
+}
+
+namespace integral::rys_quadrature::gradient {
+
+std::vector<IntegralInfo>
+parse_gradient_a(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_a--;
+  term_2.a++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.alpha;
+
+  if (info.a <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_a--;
+    term_1.polynomial = term_1.polynomial * (-info.a);
+    term_1.a--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient_b(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_b--;
+  term_2.b++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.beta;
+
+  if (info.b <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_b--;
+    term_1.polynomial = term_1.polynomial * (-info.b);
+    term_1.b--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient_c(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_c--;
+  term_2.c++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.gamma;
+
+  if (info.c <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_c--;
+    term_1.polynomial = term_1.polynomial * (-info.c);
+    term_1.c--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient_d(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_d--;
+  term_2.d++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.delta;
+
+  if (info.d <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_d--;
+    term_1.polynomial = term_1.polynomial * (-info.d);
+    term_1.d--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient(const std::vector<IntegralInfo> & info) {
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+
+    if (i_info.grad_a > 0) {
+      const auto after_gradient = parse_gradient_a(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else if (i_info.grad_b > 0) {
+      const auto after_gradient = parse_gradient_b(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else if (i_info.grad_c > 0) {
+      const auto after_gradient = parse_gradient_c(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else if (i_info.grad_d > 0) {
+      const auto after_gradient = parse_gradient_d(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+}
+
+RysPolynomial
+reduce_to_rys_polynomial(const IntegralInfo & info) {
+
+  const auto reduced = vertical_recursion_relation(
+      horizontal_recursion_relation(parse_gradient({info})));
+
+  const int total_angular_momentum =
+      info.a + info.b + info.c + info.d +
+      info.grad_a + info.grad_b + info.grad_c + info.grad_d + 1;
+
+  RysPolynomial result = {arma::vec(total_angular_momentum, arma::fill::zeros)};
+
+  for (const auto & i_info: reduced) {
+    const arma::uword n_elem = i_info.polynomial.coef.n_elem;
+    result.coef(arma::span(0, n_elem - 1)) += i_info.polynomial.coef;
+  }
+
+  return result;
+}
+
+double electron_repulsive_integral(const ERI & eri_info,
+                                   const arma::Mat<int>::fixed<3, 4> & derivative_operator) {
+  const double p = eri_info.A.exponent + eri_info.B.exponent;
+  const arma::vec3 P =
+      (eri_info.A.exponent * eri_info.A.center +
+       eri_info.B.exponent * eri_info.B.center) / p;
+  const arma::vec3 from_B_to_A = eri_info.A.center - eri_info.B.center;
+
+  const double exponential_prefactor_AB = std::exp(
+      -eri_info.A.exponent * eri_info.B.exponent / p *
+      arma::dot(from_B_to_A, from_B_to_A));
+
+  const double q = eri_info.C.exponent + eri_info.D.exponent;
+  const arma::vec3 Q =
+      (eri_info.C.exponent * eri_info.C.center +
+       eri_info.D.exponent * eri_info.D.center) / q;
+  const arma::vec3 from_D_to_C = eri_info.C.center - eri_info.D.center;
+
+  const double exponential_prefactor_CD = std::exp(
+      -eri_info.C.exponent * eri_info.D.exponent / q *
+      arma::dot(from_D_to_C, from_D_to_C));
+
+  const double rho = p * q / (p + q);
+  const arma::vec3 from_Q_to_P = P - Q;
+  const double T = rho * arma::dot(from_Q_to_P, from_Q_to_P);
+
+  const IntegralInfo I_x{{arma::vec{1.0}},
+                         eri_info.A.angular[0],
+                         eri_info.B.angular[0],
+                         eri_info.C.angular[0],
+                         eri_info.D.angular[0],
+                         p, P[0], q, Q[0],
+                         eri_info.A.center[0],
+                         eri_info.B.center[0],
+                         eri_info.C.center[0],
+                         eri_info.D.center[0],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent,
+                         derivative_operator(0, 0),
+                         derivative_operator(0, 1),
+                         derivative_operator(0, 2),
+                         derivative_operator(0, 3)};
+
+  const IntegralInfo I_y{{arma::vec{1.0}},
+                         eri_info.A.angular[1],
+                         eri_info.B.angular[1],
+                         eri_info.C.angular[1],
+                         eri_info.D.angular[1],
+                         p, P[1], q, Q[1],
+                         eri_info.A.center[1],
+                         eri_info.B.center[1],
+                         eri_info.C.center[1],
+                         eri_info.D.center[1],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent,
+                         derivative_operator(1, 0),
+                         derivative_operator(1, 1),
+                         derivative_operator(1, 2),
+                         derivative_operator(1, 3)};
+
+
+  const double prefactor_for_eri =
+      2.0 * std::pow(M_PI, 2.5) / p / q / std::sqrt(p + q) *
+      exponential_prefactor_AB * exponential_prefactor_CD;
+
+  const IntegralInfo I_z{{arma::vec{prefactor_for_eri}},
+                         eri_info.A.angular[2],
+                         eri_info.B.angular[2],
+                         eri_info.C.angular[2],
+                         eri_info.D.angular[2],
+                         p, P[2], q, Q[2],
+                         eri_info.A.center[2],
+                         eri_info.B.center[2],
+                         eri_info.C.center[2],
+                         eri_info.D.center[2],
+                         eri_info.A.exponent,
+                         eri_info.B.exponent,
+                         eri_info.C.exponent,
+                         eri_info.D.exponent,
+                         derivative_operator(2, 0),
+                         derivative_operator(2, 1),
+                         derivative_operator(2, 2),
+                         derivative_operator(2, 3)};
+
+  const RysPolynomial I_z_polynomial = gradient::reduce_to_rys_polynomial(I_z);
+  const RysPolynomial I_x_polynomial = gradient::reduce_to_rys_polynomial(I_x);
+  const RysPolynomial I_y_polynomial = gradient::reduce_to_rys_polynomial(I_y);
 
   const RysPolynomial multiplied =
       I_x_polynomial * I_y_polynomial * I_z_polynomial;

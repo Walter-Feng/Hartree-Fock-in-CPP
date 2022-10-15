@@ -78,25 +78,6 @@ double f(int k, int a, int b, double PA, double PB) {
   return result;
 }
 
-//Calculate the transformation coefficient that is needed to complete the transformation from two combined gaussian function to the sum of a series of gaussian functions
-double tranformation_coefficient(const int a[3], const int b[3], const int p[3],
-                                 const double PA[3], const double PB[3],
-                                 const double xi, const double AB) {
-  int i;
-  double result;
-
-  result = 1;
-
-  for (i = 0; i < 3; i++)
-    result *= f(p[i], a[i], b[i], PA[i], PB[i]);
-
-  result *= exp(-xi *
-                AB); // it might cause confusion, but AB here has already been squared, meaning AB -> |AB|^2
-
-  return result;
-}
-
-
 std::vector<GaussianFunction>
 expand_function_pair(const GaussianFunctionPair & pair) {
 
@@ -114,8 +95,6 @@ expand_function_pair(const GaussianFunctionPair & pair) {
   const arma::vec3 from_A_to_P = P - A.center;
   const arma::vec3 from_B_to_P = P - B.center;
 
-//  std::vector<GaussianFunction> result(arma::sum(A.angular) + arma::sum(B.angular) + 3);
-
   std::vector<GaussianFunction> result;
   for (int i = 0; i <= A.angular[0] + B.angular[0]; i++) {
     const double f_x = f(i, A.angular[0], B.angular[0], from_A_to_P[0],
@@ -127,21 +106,9 @@ expand_function_pair(const GaussianFunctionPair & pair) {
         const double f_z = f(k, A.angular[2], B.angular[2], from_A_to_P[2],
                              from_B_to_P[2]);
 
-//        const double new_coef =
-//            A.coef * B.coef * exponential_factor * f_x * f_y * f_z;
-
-        int angular[3];
-        angular[0] = i;
-        angular[1] = j;
-        angular[2] = k;
         const double new_coef =
-            A.coef * B.coef * tranformation_coefficient(A.angular.memptr(),
-                                                        B.angular.memptr(),
-                                                        angular,
-                                                        from_A_to_P.memptr(),
-                                                        from_B_to_P.memptr(),
-                                                        xi,
-                                                        AB_norm_squared);
+            A.coef * B.coef * exponential_factor * f_x * f_y * f_z;
+
         result.push_back({P, {i, j, k}, zeta, new_coef});
       }
     }

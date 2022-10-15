@@ -8,21 +8,22 @@
 namespace hfincpp {
 
 namespace geometry {
-  struct Atoms {
+struct Atoms {
 
-    std::vector<std::string> symbols;
-    arma::uvec atomic_numbers;
-    arma::mat xyz;
+  std::vector<std::string> symbols;
+  arma::uvec atomic_numbers;
+  arma::mat xyz;
 
-  };
+  int n_atoms() const;
 
-  struct geometry {
-    Atoms atoms;
-    int charge;
+};
 
-    //(TODO) Point Group
-  };
+struct Geometry {
+  Atoms atoms;
+  int charge;
 
+  //(TODO) Point Group
+};
 }
 }
 
