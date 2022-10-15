@@ -1,7 +1,7 @@
 #ifndef GEOMETRY_RESOLVE_H
 #define GEOMETRY_RESOLVE_H
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 #include "geometry.h"
 #include "periodic_table.h"
 
@@ -12,7 +12,7 @@ namespace hfincpp {
 namespace util {
 
 template<>
-geometry::geometry resolve(const nlohmann::json & pt) {
+geometry::Geometry resolve(const nlohmann::json & pt) {
 
   std::vector<std::string> symbols;
   std::vector<arma::uword> atomic_numbers;

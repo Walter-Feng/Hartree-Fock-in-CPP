@@ -1,7 +1,7 @@
 #ifndef UTIL_RESOLVE_H
 #define UTIL_RESOLVE_H
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 namespace hfincpp {
 namespace util {

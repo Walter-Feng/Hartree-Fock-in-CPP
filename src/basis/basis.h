@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "geometry/geometry.h"
+
 namespace hfincpp {
 namespace basis {
 
@@ -30,6 +32,13 @@ struct Basis {
   std::vector<GTOShell> shells;
   std::vector<std::string> atom_symbols;
   arma::uvec atom_numbers;
+
+  Basis();
+
+  Basis(const geometry::Atoms & atoms,
+        const std::string & basis_name);
+
+  Basis(const Basis & basis);
 
   int n_atoms() const;
   int n_shells() const;

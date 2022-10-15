@@ -2,7 +2,7 @@
 #define UTIL_JSON_H
 
 #include <armadillo>
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 #include "global/error.h"
 
 namespace hfincpp {

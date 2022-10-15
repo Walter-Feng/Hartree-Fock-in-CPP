@@ -354,6 +354,183 @@ double electron_repulsive_integral(const ERI & eri_info) {
 }
 }
 
+namespace integral::rys_quadrature::nuclear_attraction {
+
+std::vector<IntegralInfo>
+IntegralInfo::horizontal_recursion_relation() const {
+  if (b == 0) {
+    return {};
+  } else {
+    auto term_1 = *this;
+    auto term_2 = *this;
+    term_1.a++;
+    term_1.b--;
+    term_2.polynomial = term_2.polynomial * (term_2.A - term_2.B);
+    term_2.b--;
+
+    return {term_1, term_2};
+  }
+}
+
+std::vector<IntegralInfo>
+IntegralInfo::vertical_recursion_relation() const {
+  assert(this->b <= 0);
+
+  if (a <= 0) {
+    return {};
+  } else if (a == 1) {
+    auto term_1 = *this;
+    const RysPolynomial R_1x = {
+        arma::vec{term_1.P - term_1.A, -(term_1.P - term_1.C)}};
+    term_1.polynomial = term_1.polynomial * R_1x;
+    term_1.a--;
+    return {term_1};
+  } else {
+    auto term_1 = *this;
+    const RysPolynomial R_1x = {
+        arma::vec{term_1.P - term_1.A, -(term_1.P - term_1.C)}};
+    term_1.polynomial = term_1.polynomial * R_1x;
+    term_1.a--;
+    auto term_2 = *this;
+    const RysPolynomial R_2 = {arma::vec{0.5 / term_1.p, -0.5 / term_1.p}};
+    term_2.polynomial = term_2.polynomial * R_2;
+    term_2.a -= 2;
+    return {term_1, term_2};
+  }
+}
+
+std::vector<IntegralInfo>
+horizontal_recursion_relation(const std::vector<IntegralInfo> & info) {
+
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+    if (i_info.b > 0) {
+      const auto b_horiz = i_info.horizontal_recursion_relation();
+      const auto b_recursive = horizontal_recursion_relation(b_horiz);
+      result.insert(result.end(), b_recursive.begin(), b_recursive.end());
+
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+
+}
+
+std::vector<IntegralInfo>
+vertical_recursion_relation(const std::vector<IntegralInfo> & info) {
+
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+    assert(i_info.b == 0);
+    if (i_info.a > 0) {
+      const auto a_vert = i_info.vertical_recursion_relation();
+      const auto a_recursive = vertical_recursion_relation(a_vert);
+      result.insert(result.end(), a_recursive.begin(), a_recursive.end());
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+
+}
+
+RysPolynomial
+reduce_to_rys_polynomial(const IntegralInfo & info) {
+  const auto reduced = vertical_recursion_relation(
+      horizontal_recursion_relation({info}));
+
+  const int total_angular_momentum = info.a + info.b + 1;
+
+  RysPolynomial result = {arma::vec(total_angular_momentum, arma::fill::zeros)};
+
+  for (const auto & i_info: reduced) {
+    const arma::uword n_elem = i_info.polynomial.coef.n_elem;
+    result.coef(arma::span(0, n_elem - 1)) += i_info.polynomial.coef;
+  }
+
+  return result;
+}
+
+
+double electron_repulsive_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge) {
+  const double p = pair.first.exponent + pair.second.exponent;
+  const arma::vec3 P =
+      (pair.first.exponent * pair.first.center +
+       pair.second.exponent * pair.second.center) / p;
+  const arma::vec3 from_B_to_A = pair.first.center - pair.second.center;
+
+  const double exponential_prefactor_AB = std::exp(
+      -pair.first.exponent * pair.second.exponent / p *
+      arma::dot(from_B_to_A, from_B_to_A));
+
+  const double T = p * arma::sum(arma::square(P - core_center));
+
+  const IntegralInfo I_x{{arma::vec{1.0}},
+                         pair.first.angular[0],
+                         pair.second.angular[0],
+                         p, P[0],
+                         pair.first.center[0],
+                         pair.second.center[0],
+                         core_center[0],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+  const IntegralInfo I_y{{arma::vec{1.0}},
+                         pair.first.angular[1],
+                         pair.second.angular[1],
+                         p, P[1],
+                         pair.first.center[1],
+                         pair.second.center[1],
+                         core_center[1],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+
+  const double prefactor_for_nuclear_attraction_integral =
+      - charge * M_PI / p * exponential_prefactor_AB;
+
+  const IntegralInfo I_z{{arma::vec{prefactor_for_nuclear_attraction_integral}},
+                         pair.first.angular[2],
+                         pair.second.angular[2],
+                         p, P[2],
+                         pair.first.center[2],
+                         pair.second.center[2],
+                         core_center[2],
+                         pair.first.exponent,
+                         pair.second.exponent};
+
+  const RysPolynomial I_z_polynomial = reduce_to_rys_polynomial(I_z);
+  const RysPolynomial I_x_polynomial = reduce_to_rys_polynomial(I_x);
+  const RysPolynomial I_y_polynomial = reduce_to_rys_polynomial(I_y);
+
+  const RysPolynomial multiplied =
+      I_x_polynomial * I_y_polynomial * I_z_polynomial;
+  const int n_rys_roots = (multiplied.coef.n_elem + 1) / 2;
+
+  arma::vec u(n_rys_roots);
+  arma::vec w(n_rys_roots);
+
+  CINTrys_roots(n_rys_roots, T, u.memptr(), w.memptr());
+
+  const arma::vec t_squared = u / (u + 1.0);
+
+  double sum = 0;
+  for (int i = 0; i < n_rys_roots; i++) {
+    sum += multiplied(t_squared[i]) * w[i];
+  }
+
+  return sum * pair.first.coef * pair.second.coef;
+}
+
+}
+
 namespace integral::rys_quadrature::gradient {
 
 std::vector<IntegralInfo>

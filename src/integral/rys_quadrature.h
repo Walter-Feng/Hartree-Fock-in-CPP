@@ -67,6 +67,41 @@ namespace gradient {
 double electron_repulsive_integral(const ERI & eri_info,
                                    const arma::Mat<int>::fixed<3, 4> & derivative_operator);
 }
+
+namespace nuclear_attraction {
+double nuclear_attraction_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge);
+
+struct IntegralInfo {
+  RysPolynomial polynomial;
+
+  int a;
+  int b;
+
+
+  double p;
+  double P;
+
+  double A;
+  double B;
+  double C;
+
+  double alpha; // exponent of A
+  double beta; // exponent of B
+
+  int grad_a = 0;
+  int grad_b = 0;
+  int grad_c = 0;
+
+  [[nodiscard]] std::vector<IntegralInfo>
+  horizontal_recursion_relation() const;
+
+  [[nodiscard]] std::vector<IntegralInfo>
+  vertical_recursion_relation() const;
+
+};
+}
 }
 }
 

@@ -43,6 +43,8 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_definitions(-DBASIS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/data/basis_set_exchange\")
+
 add_library(libHFINCPP
 #        src/run.cpp
 
@@ -164,8 +166,9 @@ add_definitions(-DHAVE_LIBCINT)
 
 
 #########json#########
-#add_subdirectory(external/json)
-#include_directories(external/json/single_include)
+add_library(json SHARED external/nlohmann/json.cpp)
+include_directories("external/nlohmann")
+target_include_directories(catch2 PUBLIC external/nlohmann/)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
