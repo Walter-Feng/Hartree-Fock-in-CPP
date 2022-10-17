@@ -43,7 +43,7 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_definitions(-DBASIS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/data/basis_set_exchange\")
+add_definitions(-DBASIS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/data/basis_set_exchange/\")
 
 add_library(libHFINCPP
 #        src/run.cpp
@@ -182,6 +182,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 ####################
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test)
+
+add_executable(test_basis
+        src/basis/basis_unit_test.cpp
+        )
+
+target_link_libraries(test_basis catch2 libHFINCPP)
 
 add_executable(test_integral
         src/integral/obara_saika_unit_test.cpp

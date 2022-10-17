@@ -3,7 +3,7 @@
 #include <gsl/gsl_sf.h>
 #include <cmath>
 
-namespace integral::obara_saika {
+namespace hfincpp::integral::obara_saika {
 
 // Calculate the complete Gamma function
 double Gamma(double z) {
@@ -196,11 +196,48 @@ overlap_integral(const GaussianFunction & A, const GaussianFunction & B) {
   return overlap_integral(A.center.memptr(), B.center.memptr(),
                           A.angular[0], A.angular[1], A.angular[2],
                           B.angular[0], B.angular[1], B.angular[2],
-                          A.exponent, B.exponent);
+                          A.exponent, B.exponent) * A.coef * B.coef;
 }
 
 double overlap_integral(const GaussianFunctionPair & pair) {
   return overlap_integral(pair.first, pair.second);
+}
+
+arma::mat overlap_integral(const basis::Basis & basis) {
+
+  arma::mat overlap(basis.n_functions(), basis.n_functions());
+
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = i; j < basis.n_functions(); j++) {
+      const auto & function_i = basis.functions[i];
+      const auto n_gto_from_i = function_i.coefficients.n_elem;
+      const auto & function_j = basis.functions[j];
+      const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+      double value = 0;
+      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+          const GaussianFunction gto_function_i{function_i.center,
+                                                function_i.angular,
+                                                function_i.exponents(gto_i),
+                                                function_i.coefficients(gto_i)};
+
+          const GaussianFunction gto_function_j{function_j.center,
+                                                function_j.angular,
+                                                function_j.exponents(gto_j),
+                                                function_j.coefficients(gto_j)};
+
+          value += overlap_integral(gto_function_i, gto_function_j);
+        }
+      }
+
+      overlap(i, j) = value;
+      overlap(j, i) = value;
+    }
+  }
+
+  return overlap;
 }
 
 //Calculate the Coulomb Integral of two gaussian function

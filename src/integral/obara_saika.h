@@ -3,14 +3,21 @@
 
 #include "integral.h"
 
-namespace integral::obara_saika {
+#include "basis/basis.h"
+
+namespace hfincpp::integral::obara_saika {
 
 std::vector<GaussianFunction>
 expand_function_pair(const GaussianFunctionPair & pair);
 
+std::vector<GaussianFunction>
+    expand_basis(const basis::Basis & basis);
+
 double overlap_integral(const GaussianFunction & A, const GaussianFunction & B);
 
 double overlap_integral(const GaussianFunctionPair & pair);
+
+arma::mat overlap_integral(const basis::Basis & basis);
 
 double electron_repulsive_integral(const GaussianFunction & A,
                                    const GaussianFunction & B,

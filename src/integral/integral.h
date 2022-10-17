@@ -3,7 +3,9 @@
 
 #include <armadillo>
 
-namespace integral {
+#include "basis/basis.h"
+
+namespace hfincpp::integral {
 
 struct GaussianFunction {
   arma::vec3 center;
@@ -20,8 +22,6 @@ struct ERI {
 };
 
 using GaussianFunctionPair = std::pair<GaussianFunction, GaussianFunction>;
-
-
 
 }
 

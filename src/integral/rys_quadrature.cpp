@@ -6,7 +6,7 @@ extern "C" {
 #include <rys_roots.h>
 }
 
-namespace integral::rys_quadrature {
+namespace hfincpp::integral::rys_quadrature {
 
 double RysPolynomial::operator()(const double t_square) const {
   arma::vec powered(coef.n_elem);
@@ -354,7 +354,7 @@ double electron_repulsive_integral(const ERI & eri_info) {
 }
 }
 
-namespace integral::rys_quadrature::nuclear_attraction {
+namespace hfincpp::integral::rys_quadrature::nuclear_attraction {
 
 std::vector<IntegralInfo>
 IntegralInfo::horizontal_recursion_relation() const {
@@ -531,7 +531,7 @@ double electron_repulsive_integral(const GaussianFunctionPair & pair,
 
 }
 
-namespace integral::rys_quadrature::gradient {
+namespace hfincpp::integral::rys_quadrature::gradient {
 
 std::vector<IntegralInfo>
 parse_gradient_a(const IntegralInfo & info) {

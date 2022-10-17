@@ -1,5 +1,6 @@
 #include "integral.h"
 
-namespace integral {
+namespace hfincpp::integral {
+
 
 }

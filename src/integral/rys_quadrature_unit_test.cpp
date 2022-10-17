@@ -2,7 +2,7 @@
 
 #include "rys_quadrature.h"
 
-using namespace integral::rys_quadrature;
+using namespace hfincpp::integral::rys_quadrature;
 
 const auto numerical_gradient_functor = [](
     const std::function<double(double)> & functor,
@@ -12,7 +12,7 @@ const auto numerical_gradient_functor = [](
 };
 
 double electron_repulsive_integral_numerical_gradient(
-    const integral::ERI & info,
+    const hfincpp::integral::ERI & info,
     const arma::Mat<int>::fixed<3, 4> & derivative_operator
 ) {
   for (int i = 0; i < 3; i++) {
@@ -20,7 +20,7 @@ double electron_repulsive_integral_numerical_gradient(
       if (derivative_operator(i, j) > 0) {
         arma::Mat<int>::fixed<3, 4> new_operator = derivative_operator;
         new_operator(i, j)--;
-        integral::ERI info_copy = info;
+        hfincpp::integral::ERI info_copy = info;
         const auto index = i + j * 3;
         const auto eri_functor = [&info_copy, index, &new_operator](
             double coord_value) -> double {
@@ -183,31 +183,31 @@ TEST_CASE("Check Rys quadrature integral implementation") {
   }
 
   SECTION("Electron Repulsive Integral, ERI") {
-    integral::GaussianFunction A;
+    hfincpp::integral::GaussianFunction A;
     A.center = {0.0, 0.0, 0.0};
     A.angular = {0, 1, 1};
     A.exponent = 1.0;
     A.coef = 1.0;
 
-    integral::GaussianFunction B;
+    hfincpp::integral::GaussianFunction B;
     B.center = {0.5, 0.6, 0.7};
     B.angular = {1, 2, 0};
     B.exponent = 2.0;
     B.coef = 1.0;
 
-    integral::GaussianFunction C;
+    hfincpp::integral::GaussianFunction C;
     C.center = {0.9, 1.0, 1.1};
     C.angular = {2, 1, 1};
     C.exponent = 3.0;
     C.coef = 1.0;
 
-    integral::GaussianFunction D;
+    hfincpp::integral::GaussianFunction D;
     D.center = {1.0, 0.9, 0.8};
     D.angular = {1, 1, 0};
     D.exponent = 4.0;
     D.coef = 1.0;
 
-    integral::ERI eri{A, B, C, D};
+    hfincpp::integral::ERI eri{A, B, C, D};
 
     const double eri_integral = electron_repulsive_integral(eri);
 
@@ -215,31 +215,31 @@ TEST_CASE("Check Rys quadrature integral implementation") {
   }
 
   SECTION("Gradient of ERI") {
-    integral::GaussianFunction A;
+    hfincpp::integral::GaussianFunction A;
     A.center = {0.0, 0.0, 0.0};
     A.angular = {0, 1, 1};
     A.exponent = 1.0;
     A.coef = 1.0;
 
-    integral::GaussianFunction B;
+    hfincpp::integral::GaussianFunction B;
     B.center = {0.5, 0.6, 0.7};
     B.angular = {1, 2, 0};
     B.exponent = 2.0;
     B.coef = 1.0;
 
-    integral::GaussianFunction C;
+    hfincpp::integral::GaussianFunction C;
     C.center = {0.9, 1.0, 1.1};
     C.angular = {2, 1, 1};
     C.exponent = 3.0;
     C.coef = 1.0;
 
-    integral::GaussianFunction D;
+    hfincpp::integral::GaussianFunction D;
     D.center = {1.0, 0.9, 0.8};
     D.angular = {1, 1, 0};
     D.exponent = 4.0;
     D.coef = 1.0;
 
-    integral::ERI eri{A, B, C, D};
+    hfincpp::integral::ERI eri{A, B, C, D};
 
     arma::Mat<int>::fixed<3, 4> derivative_operator = {
         {1, 0, 0, 1},

@@ -3,6 +3,7 @@
 
 #include "integral.h"
 
+namespace hfincpp {
 namespace integral {
 namespace rys_quadrature {
 
@@ -10,7 +11,9 @@ struct RysPolynomial {
   arma::vec coef;
 
   double operator()(double t_square) const;
+
   RysPolynomial operator*(double factor) const;
+
   RysPolynomial operator*(const RysPolynomial & another) const;
 
 };
@@ -59,8 +62,12 @@ struct IntegralInfo {
 };
 
 
-std::vector<IntegralInfo> horizontal_recursion_relation(const std::vector<IntegralInfo> & info);
-std::vector<IntegralInfo> vertical_recursion_relation(const std::vector<IntegralInfo> & info);
+std::vector<IntegralInfo>
+horizontal_recursion_relation(const std::vector<IntegralInfo> & info);
+
+std::vector<IntegralInfo>
+vertical_recursion_relation(const std::vector<IntegralInfo> & info);
+
 double electron_repulsive_integral(const ERI & eri_info);
 
 namespace gradient {
@@ -101,6 +108,7 @@ struct IntegralInfo {
   vertical_recursion_relation() const;
 
 };
+}
 }
 }
 }

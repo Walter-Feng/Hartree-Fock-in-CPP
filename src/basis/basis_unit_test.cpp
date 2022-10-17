@@ -1,8 +1,6 @@
 #include <catch.hpp>
 
-#include "obara_saika.h"
-
-using namespace hfincpp::integral::obara_saika;
+#include "basis.h"
 
 TEST_CASE("Check Basis struct") {
   SECTION("check file parse") {
@@ -16,8 +14,6 @@ TEST_CASE("Check Basis struct") {
 
     atoms.symbols = {"O", "H", "H"};
 
-    hfincpp::basis::Basis basis(atoms, "cc-pvdz");
-
-    const arma::mat overlap = overlap_integral(basis);
+    hfincpp::basis::Basis basis(atoms, "3-21g");
   }
 }
