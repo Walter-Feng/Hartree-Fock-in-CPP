@@ -354,22 +354,23 @@ double electron_repulsive_integral(const ERI & eri_info) {
 }
 
 arma::mat electron_repulsive_integral(const basis::Basis & basis) {
-  const auto pair_size = basis.n_functions() * basis.n_functions();
+
   const auto n_ao = basis.n_functions();
+  const auto pair_size = n_ao * n_ao;
 
   arma::mat eri(pair_size, pair_size);
 
 #pragma omp parallel for collapse(4)
-  for (int i = 0; i < basis.n_functions(); i++) {
-    for (int j = i; j < basis.n_functions(); j++) {
-      for (int k = j; k < basis.n_functions(); k++) {
-        for (int l = k; l < basis.n_functions(); l++) {
+  for (int i = 0; i < n_ao; i++) {
+    for (int j = 0; j <= i; j++) {
+      for (int k = 0; k < n_ao; k++) {
+        for (int l = 0; l <= k; l++) {
           const auto & function_i = basis.functions[i];
           const auto n_gto_from_i = function_i.coefficients.n_elem;
           const auto & function_j = basis.functions[j];
           const auto n_gto_from_j = function_j.coefficients.n_elem;
           const auto & function_k = basis.functions[k];
-          const auto n_gto_from_k = function_i.coefficients.n_elem;
+          const auto n_gto_from_k = function_k.coefficients.n_elem;
           const auto & function_l = basis.functions[l];
           const auto n_gto_from_l = function_l.coefficients.n_elem;
 
@@ -404,7 +405,7 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
                                                         function_l.angular,
                                                         function_l.exponents(
                                                             gto_l),
-                                                        function_j.coefficients(
+                                                        function_l.coefficients(
                                                             gto_l)};
 
                   const ERI eri_info{gto_function_i, gto_function_j,
@@ -420,10 +421,6 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
           eri(j + n_ao * i, k + n_ao * l) = value;
           eri(i + n_ao * j, l + n_ao * k) = value;
           eri(j + n_ao * i, l + n_ao * k) = value;
-          eri(k + n_ao * l, i + n_ao * j) = value;
-          eri(k + n_ao * l, j + n_ao * i) = value;
-          eri(l + n_ao * k, i + n_ao * j) = value;
-          eri(l + n_ao * k, j + n_ao * i) = value;
         }
       }
     }
