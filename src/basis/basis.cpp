@@ -3,7 +3,7 @@
 #include <boost/math/special_functions/factorials.hpp>
 #include "geometry/periodic_table.h"
 #include "util/json.h"
-#include "util/error.h"
+#include "global/error.h"
 
 namespace hfincpp {
 namespace basis {

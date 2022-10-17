@@ -352,6 +352,86 @@ double electron_repulsive_integral(const ERI & eri_info) {
          * eri_info.C.coef
          * eri_info.D.coef;
 }
+
+arma::mat electron_repulsive_integral(const basis::Basis & basis) {
+  const auto pair_size = basis.n_functions() * basis.n_functions();
+  const auto n_ao = basis.n_functions();
+
+  arma::mat eri(pair_size, pair_size);
+
+#pragma omp parallel for collapse(4)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = i; j < basis.n_functions(); j++) {
+      for (int k = j; k < basis.n_functions(); k++) {
+        for (int l = k; l < basis.n_functions(); l++) {
+          const auto & function_i = basis.functions[i];
+          const auto n_gto_from_i = function_i.coefficients.n_elem;
+          const auto & function_j = basis.functions[j];
+          const auto n_gto_from_j = function_j.coefficients.n_elem;
+          const auto & function_k = basis.functions[k];
+          const auto n_gto_from_k = function_i.coefficients.n_elem;
+          const auto & function_l = basis.functions[l];
+          const auto n_gto_from_l = function_l.coefficients.n_elem;
+
+
+          double value = 0;
+          for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+            for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+              for (int gto_k = 0; gto_k < n_gto_from_k; gto_k++) {
+                for (int gto_l = 0; gto_l < n_gto_from_l; gto_l++) {
+                  const GaussianFunction gto_function_i{function_i.center,
+                                                        function_i.angular,
+                                                        function_i.exponents(
+                                                            gto_i),
+                                                        function_i.coefficients(
+                                                            gto_i)};
+
+                  const GaussianFunction gto_function_j{function_j.center,
+                                                        function_j.angular,
+                                                        function_j.exponents(
+                                                            gto_j),
+                                                        function_j.coefficients(
+                                                            gto_j)};
+
+                  const GaussianFunction gto_function_k{function_k.center,
+                                                        function_k.angular,
+                                                        function_k.exponents(
+                                                            gto_k),
+                                                        function_k.coefficients(
+                                                            gto_k)};
+
+                  const GaussianFunction gto_function_l{function_l.center,
+                                                        function_l.angular,
+                                                        function_l.exponents(
+                                                            gto_l),
+                                                        function_j.coefficients(
+                                                            gto_l)};
+
+                  const ERI eri_info{gto_function_i, gto_function_j,
+                                     gto_function_k, gto_function_l};
+
+                  value += electron_repulsive_integral(eri_info);
+                }
+              }
+            }
+          }
+
+          eri(i + n_ao * j, k + n_ao * l) = value;
+          eri(j + n_ao * i, k + n_ao * l) = value;
+          eri(i + n_ao * j, l + n_ao * k) = value;
+          eri(j + n_ao * i, l + n_ao * k) = value;
+          eri(k + n_ao * l, i + n_ao * j) = value;
+          eri(k + n_ao * l, j + n_ao * i) = value;
+          eri(l + n_ao * k, i + n_ao * j) = value;
+          eri(l + n_ao * k, j + n_ao * i) = value;
+        }
+      }
+    }
+  }
+
+  return eri;
+
+}
 }
 
 namespace hfincpp::integral::rys_quadrature::nuclear_attraction {
@@ -455,9 +535,10 @@ reduce_to_rys_polynomial(const IntegralInfo & info) {
 
   return result;
 }
+}
 
-
-double electron_repulsive_integral(const GaussianFunctionPair & pair,
+namespace hfincpp::integral::rys_quadrature {
+double nuclear_attraction_integral(const GaussianFunctionPair & pair,
                                    const arma::vec3 & core_center,
                                    double charge) {
   const double p = pair.first.exponent + pair.second.exponent;
@@ -472,39 +553,40 @@ double electron_repulsive_integral(const GaussianFunctionPair & pair,
 
   const double T = p * arma::sum(arma::square(P - core_center));
 
-  const IntegralInfo I_x{{arma::vec{1.0}},
-                         pair.first.angular[0],
-                         pair.second.angular[0],
-                         p, P[0],
-                         pair.first.center[0],
-                         pair.second.center[0],
-                         core_center[0],
-                         pair.first.exponent,
-                         pair.second.exponent};
+  const nuclear_attraction::IntegralInfo I_x{{arma::vec{1.0}},
+                                             pair.first.angular[0],
+                                             pair.second.angular[0],
+                                             p, P[0],
+                                             pair.first.center[0],
+                                             pair.second.center[0],
+                                             core_center[0],
+                                             pair.first.exponent,
+                                             pair.second.exponent};
 
-  const IntegralInfo I_y{{arma::vec{1.0}},
-                         pair.first.angular[1],
-                         pair.second.angular[1],
-                         p, P[1],
-                         pair.first.center[1],
-                         pair.second.center[1],
-                         core_center[1],
-                         pair.first.exponent,
-                         pair.second.exponent};
+  const nuclear_attraction::IntegralInfo I_y{{arma::vec{1.0}},
+                                             pair.first.angular[1],
+                                             pair.second.angular[1],
+                                             p, P[1],
+                                             pair.first.center[1],
+                                             pair.second.center[1],
+                                             core_center[1],
+                                             pair.first.exponent,
+                                             pair.second.exponent};
 
 
   const double prefactor_for_nuclear_attraction_integral =
-      - charge * M_PI / p * exponential_prefactor_AB;
+      -charge * M_PI / p * exponential_prefactor_AB;
 
-  const IntegralInfo I_z{{arma::vec{prefactor_for_nuclear_attraction_integral}},
-                         pair.first.angular[2],
-                         pair.second.angular[2],
-                         p, P[2],
-                         pair.first.center[2],
-                         pair.second.center[2],
-                         core_center[2],
-                         pair.first.exponent,
-                         pair.second.exponent};
+  const nuclear_attraction::IntegralInfo I_z{
+      {arma::vec{prefactor_for_nuclear_attraction_integral}},
+      pair.first.angular[2],
+      pair.second.angular[2],
+      p, P[2],
+      pair.first.center[2],
+      pair.second.center[2],
+      core_center[2],
+      pair.first.exponent,
+      pair.second.exponent};
 
   const RysPolynomial I_z_polynomial = reduce_to_rys_polynomial(I_z);
   const RysPolynomial I_x_polynomial = reduce_to_rys_polynomial(I_x);
@@ -529,6 +611,49 @@ double electron_repulsive_integral(const GaussianFunctionPair & pair,
   return sum * pair.first.coef * pair.second.coef;
 }
 
+arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                      const basis::Basis & basis) {
+  arma::mat nai(basis.n_functions(), basis.n_functions());
+
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = i; j < basis.n_functions(); j++) {
+      const auto & function_i = basis.functions[i];
+      const auto n_gto_from_i = function_i.coefficients.n_elem;
+      const auto & function_j = basis.functions[j];
+      const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+      double value = 0;
+      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+          const GaussianFunction gto_function_i{function_i.center,
+                                                function_i.angular,
+                                                function_i.exponents(gto_i),
+                                                function_i.coefficients(gto_i)};
+
+          const GaussianFunction gto_function_j{function_j.center,
+                                                function_j.angular,
+                                                function_j.exponents(gto_j),
+                                                function_j.coefficients(gto_j)};
+
+          for(int atom_k=0; atom_k < atoms.n_atoms(); atom_k++) {
+            const arma::vec3 center = atoms.xyz.col(atom_k);
+            const double charge = atoms.atomic_numbers(atom_k);
+
+            value += nuclear_attraction_integral({gto_function_i, gto_function_j},
+                                                 center,
+                                                 charge);
+          }
+        }
+      }
+
+      nai(i, j) = value;
+      nai(j, i) = value;
+    }
+  }
+
+  return nai;
+}
 }
 
 namespace hfincpp::integral::rys_quadrature::gradient {

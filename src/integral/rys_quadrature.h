@@ -3,6 +3,8 @@
 
 #include "integral.h"
 
+#include "geometry/geometry.h"
+
 namespace hfincpp {
 namespace integral {
 namespace rys_quadrature {
@@ -70,15 +72,23 @@ vertical_recursion_relation(const std::vector<IntegralInfo> & info);
 
 double electron_repulsive_integral(const ERI & eri_info);
 
+arma::mat electron_repulsive_integral(const basis::Basis & basis);
+
+double nuclear_attraction_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge);
+
+arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                      const basis::Basis & basis);
+
+
 namespace gradient {
 double electron_repulsive_integral(const ERI & eri_info,
                                    const arma::Mat<int>::fixed<3, 4> & derivative_operator);
 }
 
 namespace nuclear_attraction {
-double nuclear_attraction_integral(const GaussianFunctionPair & pair,
-                                   const arma::vec3 & core_center,
-                                   double charge);
+
 
 struct IntegralInfo {
   RysPolynomial polynomial;
