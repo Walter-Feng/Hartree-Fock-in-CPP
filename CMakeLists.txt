@@ -51,10 +51,14 @@ add_library(libHFINCPP
         src/basis/basis.cpp
 
         src/geometry/geometry.cpp
+        src/geometry/resolve.cpp
 
         src/integral/integral.cpp
         src/integral/obara_saika.cpp
         src/integral/rys_quadrature.cpp
+
+        src/scf/scf.cpp
+        src/mixing/simple_mixing.cpp
         )
 
 

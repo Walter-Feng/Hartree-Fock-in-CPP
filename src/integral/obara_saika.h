@@ -1,5 +1,5 @@
-#ifndef HFINCPP_HOMEBREW_INTEGRAL_H
-#define HFINCPP_HOMEBREW_INTEGRAL_H
+#ifndef INTEGRAL_OBARA_SAIKA_H
+#define INTEGRAL_OBARA_SAIKA_H
 
 #include "integral.h"
 
@@ -31,4 +31,4 @@ double electron_repulsive_integral(const ERI & eri_info);
 }
 
 
-#endif //HFINCPP_HOMEBREW_INTEGRAL_H
+#endif //INTEGRAL_OBARA_SAIKA_H

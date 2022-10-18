@@ -13,17 +13,12 @@ struct Atoms {
   std::vector<std::string> symbols;
   arma::uvec atomic_numbers;
   arma::mat xyz;
+  int charge;
 
   int n_atoms() const;
 
 };
 
-struct Geometry {
-  Atoms atoms;
-  int charge;
-
-  //(TODO) Point Group
-};
 }
 }
 

@@ -4,6 +4,9 @@
 namespace hfincpp {
 
 nlohmann::json run(const nlohmann::json & input) {
+
+  const geometry::Atoms atoms = util::resolve<geometry::Atoms>(input);
+
   return {};
 }
 
