@@ -130,7 +130,7 @@ nlohmann::json rhf(const nlohmann::json & input,
 
     arma::cx_vec eigvals;
     arma::cx_mat eigvecs;
-    H0.print("H0");
+
     arma::eig_pair(eigvals, eigvecs, H0, overlap.slice(0));
 
     assert(H0.is_hermitian() && overlap.slice(0).is_hermitian());
