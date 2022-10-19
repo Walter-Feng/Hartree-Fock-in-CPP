@@ -21,6 +21,47 @@ using OverlapMatrix = std::vector<arma::Mat<T>>;
 template<typename T>
 using DensityMatrix = std::vector<arma::Mat<T>>;
 
+template<typename T>
+std::vector<arma::Mat<T>> operator+(const std::vector<arma::Mat<T>> & A,
+                                     const std::vector<arma::Mat<T>> & B) {
+  assert(A.size() == B.size());
+
+  std::vector<arma::Mat<T>> result(A.size());
+
+#pragma omp parallel for
+  for(unsigned long i=0; i<A.size(); i++) {
+    result[i] = A[i] + B[i];
+  }
+
+  return result;
+}
+
+template<typename T>
+std::vector<arma::Mat<T>> operator*(const std::vector<arma::Mat<T>> & A,
+                                    const double factor) {
+  std::vector<arma::Mat<T>> result(A.size());
+
+#pragma omp parallel for
+  for(unsigned long i=0; i<A.size(); i++) {
+    result[i] = A[i] * factor;
+  }
+
+  return result;
+}
+
+template<typename T>
+std::vector<arma::Mat<T>> operator*(const double factor,
+                                    const std::vector<arma::Mat<T>> & A) {
+  std::vector<arma::Mat<T>> result(A.size());
+
+#pragma omp parallel for
+  for(unsigned long i=0; i<A.size(); i++) {
+    result[i] = A[i] * factor;
+  }
+
+  return result;
+}
+
 using Eigenvalue = arma::vec;
 using OccupationVector = arma::vec;
 

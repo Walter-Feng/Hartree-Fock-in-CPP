@@ -21,13 +21,15 @@ arma::mat core_hamiltonian(const geometry::Atoms & atoms,
 }
 
 scf::FockBuilder<double> generate_fock_builder(const geometry::Atoms & atoms,
-                                               const basis::Basis & basis) {
+                                               const basis::Basis & basis,
+                                               const arma::mat & one_electron_integral,
+                                               const arma::mat & two_electron_integral) {
 
   const arma::mat coulomb_integral =
       integral::rys_quadrature::electron_repulsive_integral(basis);
 
   const arma::mat overlap = integral::obara_saika::overlap_integral(basis);
-  const arma::mat H0 = core_hamiltonian(atoms, basis);
+  const arma::mat & H0 = one_electron_integral;
 
   arma::mat exchange_integral(arma::size(coulomb_integral));
 
@@ -59,6 +61,13 @@ scf::FockBuilder<double> generate_fock_builder(const geometry::Atoms & atoms,
   };
 
 
+}
+
+scf::EnergyBuilder<double> generate_energy_builder(const geometry::Atoms & atoms,
+                                                   const basis::Basis & basis,
+                                                   const arma::mat & one_electron_integral,
+                                                   const arma::mat & two_electron_integral) {
+  const arma::mat H0 = core_hamiltonian(atoms, basis);
 }
 
 nlohmann::json rhf(const nlohmann::json & input,
