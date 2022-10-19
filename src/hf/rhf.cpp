@@ -130,6 +130,7 @@ nlohmann::json rhf(const nlohmann::json & input,
 
     arma::cx_vec eigvals;
     arma::cx_mat eigvecs;
+    H0.print("H0");
     arma::eig_pair(eigvals, eigvecs, H0, overlap.slice(0));
 
     assert(H0.is_hermitian() && overlap.slice(0).is_hermitian());
@@ -138,10 +139,16 @@ nlohmann::json rhf(const nlohmann::json & input,
     const arma::vec occupation_vector = occupation_builder(
         real_eigvals(sort_index), n_elec);
 
-    const arma::mat sorted_orbitals = arma::real(eigvecs.cols(sort_index));
+    arma::mat sorted_orbitals = arma::real(eigvecs.cols(sort_index));
+
+    const arma::rowvec normalization_constant =
+        arma::real(arma::sum(sorted_orbitals % (overlap.slice(0) * sorted_orbitals)));
+
+    sorted_orbitals.each_row() %= 1.0 / arma::sqrt(normalization_constant);
     const arma::mat density =
         sorted_orbitals * arma::diagmat(occupation_vector) *
         sorted_orbitals.t();
+
     initial_guess.slice(0) = density;
   } else {
     throw Error(

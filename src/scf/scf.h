@@ -186,13 +186,18 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
       arma::eig_pair(eigvals, eigvecs, fock_matrices.slice(i),
                      overlap.slice(i));
 
-
       const arma::vec real_eigenvalues = arma::real(eigvals);
       const arma::uvec sort_index = arma::sort_index(real_eigenvalues);
       const arma::vec sorted_eigenvalues = real_eigenvalues(sort_index);
-      const arma::cx_mat sorted_eigvecs = eigvecs.cols(sort_index);
+      arma::cx_mat sorted_eigvecs = eigvecs.cols(sort_index);
+      const arma::rowvec normalization_constant =
+          arma::real(arma::sum(sorted_eigvecs % (overlap.slice(0) * sorted_eigvecs)));
+
+      sorted_eigvecs.each_row() %=
+          1.0 / arma::conv_to<arma::cx_mat>::from(arma::sqrt(normalization_constant));
 
       eigenvalues.col(i) = sorted_eigenvalues;
+
       if constexpr(std::is_same<T, double>::value) {
         orbitals.slice(i) = arma::real(sorted_eigvecs);
       } else {
