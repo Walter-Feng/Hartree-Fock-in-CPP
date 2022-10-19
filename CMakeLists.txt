@@ -46,7 +46,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_definitions(-DBASIS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/data/basis_set_exchange/\")
 
 add_library(libHFINCPP
-#        src/run.cpp
+        src/run.cpp
 
         src/basis/basis.cpp
 
@@ -66,11 +66,11 @@ add_library(libHFINCPP
         )
 
 
-#add_executable(hfincpp
-#        src/main.cpp
-#)
+add_executable(hfincpp
+        src/main.cpp
+)
 
-#target_link_libraries(hfincpp libHFINCPP)
+target_link_libraries(hfincpp libHFINCPP)
 ####################
 #  find Libraries  #
 ####################

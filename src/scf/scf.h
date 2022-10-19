@@ -13,54 +13,13 @@
 namespace hfincpp::scf {
 
 template<typename T>
-using FockMatrix = std::vector<arma::Mat<T>>;
+using FockMatrix = arma::Cube<T>;
 
 template<typename T>
-using OverlapMatrix = std::vector<arma::Mat<T>>;
+using OverlapMatrix = arma::Cube<T>;
 
 template<typename T>
-using DensityMatrix = std::vector<arma::Mat<T>>;
-
-template<typename T>
-std::vector<arma::Mat<T>> operator+(const std::vector<arma::Mat<T>> & A,
-                                     const std::vector<arma::Mat<T>> & B) {
-  assert(A.size() == B.size());
-
-  std::vector<arma::Mat<T>> result(A.size());
-
-#pragma omp parallel for
-  for(unsigned long i=0; i<A.size(); i++) {
-    result[i] = A[i] + B[i];
-  }
-
-  return result;
-}
-
-template<typename T>
-std::vector<arma::Mat<T>> operator*(const std::vector<arma::Mat<T>> & A,
-                                    const double factor) {
-  std::vector<arma::Mat<T>> result(A.size());
-
-#pragma omp parallel for
-  for(unsigned long i=0; i<A.size(); i++) {
-    result[i] = A[i] * factor;
-  }
-
-  return result;
-}
-
-template<typename T>
-std::vector<arma::Mat<T>> operator*(const double factor,
-                                    const std::vector<arma::Mat<T>> & A) {
-  std::vector<arma::Mat<T>> result(A.size());
-
-#pragma omp parallel for
-  for(unsigned long i=0; i<A.size(); i++) {
-    result[i] = A[i] * factor;
-  }
-
-  return result;
-}
+using DensityMatrix = arma::Cube<T>;
 
 using Eigenvalue = arma::vec;
 using OccupationVector = arma::vec;
@@ -97,7 +56,7 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
   int total_length = 0;
 
   if (print_level == 1) {
-    total_length = 6 + width * 2;
+    total_length = 6 + width * 3;
 
     if (print_header) {
       for (int i = 0; i < total_length; i++) {
@@ -119,6 +78,7 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
     fmt::print("{:>{}}", iter, 6);
     const arma::rowvec combined{computation_time, state.energy, state.diff};
     print(combined, width, precision);
+    fmt::print("\n");
   }
 
   return total_length;
@@ -127,10 +87,10 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
 
 
 template<typename T>
-struct SCFResult{
-  std::vector<Eigenvalue> eigenvalues;
-  std::vector<arma::Mat<T>> orbitals;
-  std::vector<OccupationVector> occupations;
+struct SCFResult {
+  arma::mat eigenvalues;
+  arma::Cube<T> orbitals;
+  arma::mat occupations;
   DensityMatrix<T> density;
   OverlapMatrix<T> overlap;
   FockMatrix<T> fock;
@@ -139,14 +99,14 @@ struct SCFResult{
 
   [[nodiscard]] nlohmann::json to_json() const {
 
-    const auto n_items = eigenvalues.size();
-    assert(orbitals.size() == n_items);
-    assert(occupations.size() == n_items);
-    assert(density.size() == n_items);
-    assert(overlap.size() == n_items);
-    assert(fock.size() == n_items);
+    const auto n_items = eigenvalues.n_cols;
+    assert(orbitals.n_slices == n_items);
+    assert(occupations.n_cols == n_items);
+    assert(density.n_slices == n_items);
+    assert(overlap.n_slices == n_items);
+    assert(fock.n_slices == n_items);
 
-    if(n_items == 1) {
+    if (n_items == 1) {
       nlohmann::json result;
       util::put(result, "eigenvalues", eigenvalues[0]);
       util::put(result, "orbitals", orbitals[0]);
@@ -158,7 +118,7 @@ struct SCFResult{
       return result;
     } else {
       nlohmann::json::array_t array;
-      for(int i=0; i<n_items; i++) {
+      for (int i = 0; i < n_items; i++) {
         nlohmann::json channel;
         util::put(channel, "eigenvalues", eigenvalues[i]);
         util::put(channel, "orbitals", orbitals[i]);
@@ -181,15 +141,15 @@ using Update = std::function<State(const State & state)>;
 
 template<class UpdateMethod, typename T>
 SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
-                   const FockBuilder<T> & fock_builder,
-                   const OccupationBuilder & occupation_builder,
-                   const UpdateMethod & update_method,
-                   const OverlapMatrix<T> & overlap,
-                   const DensityMatrix<T> & initial,
-                   const arma::vec & n_electrons,
-                   const int max_iter,
-                   const double energy_tolerance,
-                   const int print_level = 1) {
+                 const FockBuilder<T> & fock_builder,
+                 const OccupationBuilder & occupation_builder,
+                 const UpdateMethod & update_method,
+                 const OverlapMatrix<T> & overlap,
+                 const DensityMatrix<T> & initial,
+                 const arma::vec & n_electrons,
+                 const int max_iter,
+                 const double energy_tolerance,
+                 const int print_level = 1) {
 
   const double initial_energy = energy_builder(initial);
 
@@ -204,49 +164,59 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
   double previous_energy = initial_energy;
 
   int iter = 1;
-  for(;iter <= max_iter; iter++) {
-    std::pair<Update<DensityMatrix<T>>, UpdateMethod> renewed = updater(previous_state);
+
+  const auto n_ao = overlap.slice(0).n_rows;
+
+  for (; iter <= max_iter; iter++) {
+    std::pair<Update<DensityMatrix<T>>, UpdateMethod> renewed = updater(
+        previous_state);
+
     const DensityMatrix<T> updated_state = renewed.first(previous_state);
     updater = renewed.second;
     const FockMatrix<T> fock_matrices = fock_builder(updated_state);
 
-    DensityMatrix<T> new_state;
-    std::vector<Eigenvalue> eigenvalues;
-    std::vector<arma::Mat<T>> orbitals;
-    std::vector<OccupationVector> occupation_vectors;
-    for(int i=0; i<fock_matrices.size(); i++) {
+    DensityMatrix<T> new_state(n_ao, n_ao, fock_matrices.n_slices);
+    arma::mat eigenvalues(n_ao, fock_matrices.n_slices);
+    arma::Cube<T> orbitals(n_ao, n_ao, fock_matrices.n_slices);
+    arma::mat occupation_vectors(n_ao, fock_matrices.n_slices);
+    for (int i = 0; i < fock_matrices.n_slices; i++) {
       arma::cx_vec eigvals;
       arma::cx_mat eigvecs;
 
-      arma::eig_pair(eigvals, eigvecs, fock_matrices[i], overlap[i]);
+      arma::eig_pair(eigvals, eigvecs, fock_matrices.slice(i),
+                     overlap.slice(i));
+
 
       const arma::vec real_eigenvalues = arma::real(eigvals);
+      const arma::uvec sort_index = arma::sort_index(real_eigenvalues);
+      const arma::vec sorted_eigenvalues = real_eigenvalues(sort_index);
+      const arma::cx_mat sorted_eigvecs = eigvecs.cols(sort_index);
 
-      eigenvalues.push_back(real_eigenvalues);
+      eigenvalues.col(i) = sorted_eigenvalues;
       if constexpr(std::is_same<T, double>::value) {
-        orbitals.push_back(arma::real(eigvecs));
+        orbitals.slice(i) = arma::real(sorted_eigvecs);
       } else {
-        orbitals.push_back(eigvecs);
+        orbitals.slice(i) = sorted_eigvecs;
       }
 
-
       const OccupationVector occupation =
-          occupation_builder(real_eigenvalues, n_electrons(i));
+          occupation_builder(sorted_eigenvalues, n_electrons(i));
 
-      occupation_vectors.push_back(occupation);
+      occupation_vectors.col(i) = occupation;
 
       const arma::Mat<T> new_density =
-          eigvecs * arma::diagmat(occupation) * eigvecs.t();
+          orbitals.slice(i) * arma::diagmat(occupation) * orbitals.slice(i).t();
 
-      new_state.push_back(new_density);
+      new_state.slice(i) = new_density;
     }
     double new_energy = energy_builder(new_state);
     double diff = new_energy - previous_energy;
     wrapper = {new_energy, diff};
     auto now = std::chrono::high_resolution_clock::now();
     const double time_consumed = (now - start_scf).count();
-    generic_scf_printer<SimpleSCFWrapper>(wrapper, time_consumed, iter, print_level, false);
-    if(std::abs(diff) < energy_tolerance) {
+    generic_scf_printer<SimpleSCFWrapper>(wrapper, time_consumed, iter,
+                                          print_level, false);
+    if (std::abs(diff) < energy_tolerance) {
 
       for (int i = 0; i < total_length; i++) {
         fmt::print("=");
@@ -255,7 +225,8 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
 
       fmt::print("\n");
 
-      return {eigenvalues, orbitals, occupation_vectors, new_state, overlap, fock_matrices, new_energy};
+      return {eigenvalues, orbitals, occupation_vectors, new_state, overlap,
+              fock_matrices, new_energy};
     }
     previous_state = new_state;
     previous_energy = new_energy;

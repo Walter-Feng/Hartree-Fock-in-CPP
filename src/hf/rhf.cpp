@@ -8,8 +8,7 @@
 
 #include "mixing/simple_mixing.h"
 
-namespace hfincpp {
-namespace hf {
+namespace hfincpp::hf {
 
 arma::mat core_hamiltonian(const geometry::Atoms & atoms,
                            const basis::Basis & basis) {
@@ -31,12 +30,13 @@ scf::FockBuilder<double> generate_fock_builder(const basis::Basis & basis,
 
   return [n_ao, H0,
       two_electron_integral](const scf::DensityMatrix<double> & density) {
-    scf::FockMatrix<double> result;
-    for (const auto & i_density: density) {
-      result.push_back(H0 +
-                       arma::reshape(
-                           two_electron_integral * arma::vectorise(i_density),
-                           n_ao, n_ao));
+    scf::FockMatrix<double> result(arma::size(density));
+    for (auto i = 0; i < density.n_slices; i++) {
+      result.slice(i) = H0 +
+                        arma::reshape(
+                            two_electron_integral *
+                            arma::vectorise(density.slice(i)),
+                            n_ao, n_ao);
     }
 
     return result;
@@ -46,21 +46,31 @@ scf::FockBuilder<double> generate_fock_builder(const basis::Basis & basis,
 }
 
 scf::EnergyBuilder<double>
-generate_energy_builder(const arma::mat & one_electron_integral,
+generate_energy_builder(const geometry::Atoms & atoms,
+                        const arma::mat & one_electron_integral,
                         const arma::mat & two_electron_integral) {
 
   const arma::mat & H0 = one_electron_integral;
-  return [H0, two_electron_integral](
+  const arma::vec norm_squared = arma::sum(arma::square(atoms.xyz)).t();
+  arma::mat distance_squared = - 2.0 * atoms.xyz.t() * atoms.xyz;
+  distance_squared.each_col() += norm_squared;
+  distance_squared.each_row() += norm_squared.t();
+  arma::mat inverse_r = 1.0 / arma::sqrt(distance_squared);
+  inverse_r.diag().zeros();
+  const double repulsion_among_cores =
+      0.5 * arma::dot(atoms.atomic_numbers, inverse_r * atoms.atomic_numbers);
+
+  return [H0, two_electron_integral, repulsion_among_cores](
       const scf::DensityMatrix<double> & density) {
     double result = 0;
-    for (const auto & i_density: density) {
+    for (auto i = 0; i < density.n_slices; i++) {
       result +=
-          arma::dot(arma::vectorise(i_density),
-                    two_electron_integral * arma::vectorise(i_density))
-          + arma::dot(i_density, H0);
+         0.5 * arma::dot(arma::vectorise(density.slice(i)),
+                    two_electron_integral * arma::vectorise(density.slice(i)))
+          + arma::dot(density.slice(i), H0);
     }
 
-    return result;
+    return result + repulsion_among_cores;
   };
 
 }
@@ -69,8 +79,9 @@ nlohmann::json rhf(const nlohmann::json & input,
                    const geometry::Atoms & atoms,
                    const basis::Basis & basis) {
 
-  const scf::OverlapMatrix<double> overlap = {
-      integral::obara_saika::overlap_integral(basis)};
+  scf::OverlapMatrix<double> overlap(basis.n_functions(), basis.n_functions(),
+                                     1);
+  overlap.slice(0) = integral::obara_saika::overlap_integral(basis);
 
   const arma::mat coulomb_integral =
       integral::rys_quadrature::electron_repulsive_integral(basis);
@@ -104,9 +115,9 @@ nlohmann::json rhf(const nlohmann::json & input,
       generate_fock_builder(basis, H0, two_electron_integral);
 
   const scf::EnergyBuilder<double> energy_builder =
-      generate_energy_builder(H0, two_electron_integral);
+      generate_energy_builder(atoms, H0, two_electron_integral);
 
-  scf::DensityMatrix<double> initial_guess;
+  scf::DensityMatrix<double> initial_guess(arma::size(overlap));
 
   const int n_elec = atoms.n_elec();
 
@@ -119,16 +130,19 @@ nlohmann::json rhf(const nlohmann::json & input,
 
     arma::cx_vec eigvals;
     arma::cx_mat eigvecs;
-    arma::eig_pair(eigvals, eigvecs, H0, overlap[0]);
+    arma::eig_pair(eigvals, eigvecs, H0, overlap.slice(0));
 
-    assert(H0.is_hermitian() && overlap[0].is_hermitian());
+    assert(H0.is_hermitian() && overlap.slice(0).is_hermitian());
     const arma::vec real_eigvals = arma::real(eigvals);
     const arma::uvec sort_index = arma::sort_index(real_eigvals);
     const arma::vec occupation_vector = occupation_builder(
         real_eigvals(sort_index), n_elec);
+
     const arma::mat sorted_orbitals = arma::real(eigvecs.cols(sort_index));
-    initial_guess = {sorted_orbitals * arma::diagmat(occupation_vector) *
-                     sorted_orbitals.t()};
+    const arma::mat density =
+        sorted_orbitals * arma::diagmat(occupation_vector) *
+        sorted_orbitals.t();
+    initial_guess.slice(0) = density;
   } else {
     throw Error(
         "only initial guess method of H0 is allowed for current version");
@@ -147,13 +161,9 @@ nlohmann::json rhf(const nlohmann::json & input,
                 max_iter, energy_tolerance, print_level);
 
     return scf_result.to_json();
+  } else {
+    throw Error("Only simple mixing method is allowed in current method");
   }
-  {
-
-  }
-
-
 }
 
-}
 }

@@ -4,7 +4,7 @@
 #include <armadillo>
 #include <iostream>
 #include <fmt/core.h>
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 #include "run.h"
 #include "util/time.h"

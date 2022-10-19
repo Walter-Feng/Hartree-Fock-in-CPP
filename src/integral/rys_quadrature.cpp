@@ -572,7 +572,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
 
 
   const double prefactor_for_nuclear_attraction_integral =
-      -charge * M_PI / p * exponential_prefactor_AB;
+      - charge * 2.0 * M_PI / p * exponential_prefactor_AB;
 
   const nuclear_attraction::IntegralInfo I_z{
       {arma::vec{prefactor_for_nuclear_attraction_integral}},

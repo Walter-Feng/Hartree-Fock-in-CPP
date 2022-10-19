@@ -1,7 +1,7 @@
 #ifndef HFINCPP_RUN_H
 #define HFINCPP_RUN_H
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 namespace hfincpp {
 
