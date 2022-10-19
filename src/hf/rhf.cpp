@@ -20,41 +20,23 @@ arma::mat core_hamiltonian(const geometry::Atoms & atoms,
   return kinetic + nuclear_attraction;
 }
 
-scf::FockBuilder<double> generate_fock_builder(const geometry::Atoms & atoms,
-                                               const basis::Basis & basis,
+scf::FockBuilder<double> generate_fock_builder(const basis::Basis & basis,
                                                const arma::mat & one_electron_integral,
                                                const arma::mat & two_electron_integral) {
 
-  const arma::mat coulomb_integral =
-      integral::rys_quadrature::electron_repulsive_integral(basis);
 
+  const auto n_ao = basis.n_functions();
   const arma::mat overlap = integral::obara_saika::overlap_integral(basis);
   const arma::mat & H0 = one_electron_integral;
 
-  arma::mat exchange_integral(arma::size(coulomb_integral));
-
-  const auto n_ao = basis.n_functions();
-
-#pragma omp parallel for
-  for(int i=0; i<n_ao; i++) {
-    for(int j=0; j<n_ao; j++) {
-      for(int k=0; k<n_ao; k++) {
-        for(int l=0; l<n_ao; l++) {
-          exchange_integral(i + l * n_ao, k + j * n_ao) =
-              coulomb_integral(i + j * n_ao, k + l * n_ao);
-        }
-      }
-    }
-  }
-
-  const arma::mat two_electron_integral = coulomb_integral - 0.5 * exchange_integral;
-
   return [n_ao, H0,
-          two_electron_integral](const scf::DensityMatrix<double> & density) {
+      two_electron_integral](const scf::DensityMatrix<double> & density) {
     scf::FockMatrix<double> result;
-    for(const auto & i_density : density) {
+    for (const auto & i_density: density) {
       result.push_back(H0 +
-      arma::reshape(two_electron_integral * arma::vectorise(i_density), n_ao, n_ao));
+                       arma::reshape(
+                           two_electron_integral * arma::vectorise(i_density),
+                           n_ao, n_ao));
     }
 
     return result;
@@ -63,30 +45,76 @@ scf::FockBuilder<double> generate_fock_builder(const geometry::Atoms & atoms,
 
 }
 
-scf::EnergyBuilder<double> generate_energy_builder(const geometry::Atoms & atoms,
-                                                   const basis::Basis & basis,
-                                                   const arma::mat & one_electron_integral,
-                                                   const arma::mat & two_electron_integral) {
-  const arma::mat H0 = core_hamiltonian(atoms, basis);
+scf::EnergyBuilder<double>
+generate_energy_builder(const arma::mat & one_electron_integral,
+                        const arma::mat & two_electron_integral) {
+
+  const arma::mat & H0 = one_electron_integral;
+  return [H0, two_electron_integral](
+      const scf::DensityMatrix<double> & density) {
+    double result = 0;
+    for (const auto & i_density: density) {
+      result +=
+          arma::dot(arma::vectorise(i_density),
+                    two_electron_integral * arma::vectorise(i_density))
+          + arma::dot(i_density, H0);
+    }
+
+    return result;
+  };
+
 }
 
 nlohmann::json rhf(const nlohmann::json & input,
                    const geometry::Atoms & atoms,
                    const basis::Basis & basis) {
 
-  const scf::OverlapMatrix<double> overlap = {integral::obara_saika::overlap_integral(basis)};
+  const scf::OverlapMatrix<double> overlap = {
+      integral::obara_saika::overlap_integral(basis)};
+
+  const arma::mat coulomb_integral =
+      integral::rys_quadrature::electron_repulsive_integral(basis);
+
+  arma::mat exchange_integral(arma::size(coulomb_integral));
+
+  const auto n_ao = basis.n_functions();
+
+#pragma omp parallel for
+  for (int i = 0; i < n_ao; i++) {
+    for (int j = 0; j < n_ao; j++) {
+      for (int k = 0; k < n_ao; k++) {
+        for (int l = 0; l < n_ao; l++) {
+          exchange_integral(i + l * n_ao, k + j * n_ao) =
+              coulomb_integral(i + j * n_ao, k + l * n_ao);
+        }
+      }
+    }
+  }
+
+  const arma::mat two_electron_integral =
+      coulomb_integral - 0.5 * exchange_integral;
+
+  const arma::mat H0 = core_hamiltonian(atoms, basis);
+
   const double n_elec_per_orb = 2.0;
   const scf::OccupationBuilder occupation_builder =
       scf::occupation::simple_occupation(n_elec_per_orb);
 
-  const scf::FockBuilder<double> fock_builder = generate_fock_builder(atoms, basis);
+  const scf::FockBuilder<double> fock_builder =
+      generate_fock_builder(basis, H0, two_electron_integral);
+
+  const scf::EnergyBuilder<double> energy_builder =
+      generate_energy_builder(H0, two_electron_integral);
 
   scf::DensityMatrix<double> initial_guess;
 
   const int n_elec = atoms.n_elec();
 
   const std::string initial_guess_method = input.at("initial_guess");
-  if(initial_guess_method == "H0") {
+  const int max_iter = input.at("max_iter");
+  const double energy_tolerance = input.at("energy_tolerance");
+  const int print_level = input.at("print_level");
+  if (initial_guess_method == "H0") {
     const arma::mat H0 = core_hamiltonian(atoms, basis);
 
     arma::cx_vec eigvals;
@@ -96,19 +124,35 @@ nlohmann::json rhf(const nlohmann::json & input,
     assert(H0.is_hermitian() && overlap[0].is_hermitian());
     const arma::vec real_eigvals = arma::real(eigvals);
     const arma::uvec sort_index = arma::sort_index(real_eigvals);
-    const arma::vec occupation_vector = occupation_builder(real_eigvals(sort_index), n_elec);
+    const arma::vec occupation_vector = occupation_builder(
+        real_eigvals(sort_index), n_elec);
     const arma::mat sorted_orbitals = arma::real(eigvecs.cols(sort_index));
-    initial_guess = {sorted_orbitals * arma::diagmat(occupation_vector) * sorted_orbitals.t()};
+    initial_guess = {sorted_orbitals * arma::diagmat(occupation_vector) *
+                     sorted_orbitals.t()};
   } else {
-    throw Error("only initial guess method of H0 is allowed for current version");
+    throw Error(
+        "only initial guess method of H0 is allowed for current version");
   }
 
-  if(input.at("mixing") == "simple_mixing") {
+  if (input.at("mixing") == "simple_mixing") {
     const double alpha = input.at("mixing_alpha");
     const auto update_method =
         mixing::simple_mixing<scf::DensityMatrix<double>>{alpha, initial_guess};
 
+    const auto scf_result = scf::scf<
+        mixing::simple_mixing<scf::DensityMatrix<double>>,
+        double>(energy_builder, fock_builder, occupation_builder,
+                update_method, overlap, initial_guess,
+                {(double) atoms.n_elec()},
+                max_iter, energy_tolerance, print_level);
+
+    return scf_result.to_json();
   }
+  {
+
+  }
+
+
 }
 
 }

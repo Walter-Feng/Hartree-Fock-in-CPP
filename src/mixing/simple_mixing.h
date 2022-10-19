@@ -13,9 +13,11 @@ struct simple_mixing {
     simple_mixing<State> new_mixer{alpha, state};
     const auto & old_state = state;
     const double alpha_in_function = alpha;
-    const auto updater = [old_state, alpha_in_function]
+    const scf::Update<State> updater = [old_state, alpha_in_function]
         (const State & state_in_function) -> State {
-      return alpha_in_function * state_in_function + (1.0 - alpha_in_function) * old_state;
+      const State left = alpha_in_function * state_in_function;
+      const State right = (1.0 - alpha_in_function) * old_state;
+      return left + right;
     };
     return  {updater, new_mixer};
   }

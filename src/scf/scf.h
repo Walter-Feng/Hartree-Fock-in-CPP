@@ -74,11 +74,57 @@ using OccupationBuilder = std::function<OccupationVector(const arma::vec &,
 template<typename T>
 using FockBuilder = std::function<FockMatrix<T>(const DensityMatrix<T> &)>;
 
-template<typename T>
-struct SCFWrapper {
+struct SimpleSCFWrapper {
   double energy;
   double diff;
 };
+
+template<typename SCFWrapper>
+Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
+                                             const double computation_time,
+                                             const int iter,
+                                             const int print_level,
+                                             const bool print_header) -> int {
+
+  int width = 18;
+  int precision = 8;
+
+  if (print_level > 2) {
+    width = 27;
+    precision = 17;
+  }
+
+  int total_length = 0;
+
+  if (print_level == 1) {
+    total_length = 6 + width * 2;
+
+    if (print_header) {
+      for (int i = 0; i < total_length; i++) {
+        fmt::print("=");
+      }
+      fmt::print("\n");
+
+      fmt::print("{:>{}}", "|Iter|", 6);
+      fmt::print("{:>{}}", "Time |", width);
+      fmt::print("{:>{}}", "Energy |", width);
+      fmt::print("{:>{}}", "Energy Diff |", width);
+      fmt::print("\n");
+      for (int i = 0; i < total_length; i++) {
+        fmt::print("=");
+      }
+      fmt::print("\n");
+    }
+
+    fmt::print("{:>{}}", iter, 6);
+    const arma::rowvec combined{computation_time, state.energy, state.diff};
+    print(combined, width, precision);
+  }
+
+  return total_length;
+
+};
+
 
 template<typename T>
 struct SCFResult{
@@ -147,8 +193,9 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
 
   const double initial_energy = energy_builder(initial);
 
-  SCFWrapper<T> wrapper = {initial, initial_energy, 0};
-  const int total_length = generic_scf_printer(wrapper, 0, 0, print_level, true);
+  SimpleSCFWrapper wrapper = {initial_energy, 0};
+  const int total_length =
+      generic_scf_printer<SimpleSCFWrapper>(wrapper, 0.0, 0, print_level, true);
 
   auto start_scf = std::chrono::high_resolution_clock::now();
 
@@ -158,7 +205,7 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
 
   int iter = 1;
   for(;iter <= max_iter; iter++) {
-    std::pair<DensityMatrix<T>, UpdateMethod> renewed = updater(previous_state);
+    std::pair<Update<DensityMatrix<T>>, UpdateMethod> renewed = updater(previous_state);
     const DensityMatrix<T> updated_state = renewed.first(previous_state);
     updater = renewed.second;
     const FockMatrix<T> fock_matrices = fock_builder(updated_state);
@@ -168,15 +215,20 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
     std::vector<arma::Mat<T>> orbitals;
     std::vector<OccupationVector> occupation_vectors;
     for(int i=0; i<fock_matrices.size(); i++) {
-      arma::Col<T> eigvals;
-      arma::Mat<T> eigvecs;
+      arma::cx_vec eigvals;
+      arma::cx_mat eigvecs;
 
       arma::eig_pair(eigvals, eigvecs, fock_matrices[i], overlap[i]);
 
       const arma::vec real_eigenvalues = arma::real(eigvals);
 
       eigenvalues.push_back(real_eigenvalues);
-      orbitals.push_back(eigvecs);
+      if constexpr(std::is_same<T, double>::value) {
+        orbitals.push_back(arma::real(eigvecs));
+      } else {
+        orbitals.push_back(eigvecs);
+      }
+
 
       const OccupationVector occupation =
           occupation_builder(real_eigenvalues, n_electrons(i));
@@ -188,11 +240,12 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
 
       new_state.push_back(new_density);
     }
-    const double new_energy = energy_builder(new_state);
-    const double diff = new_energy - previous_energy;
-    wrapper = {new_state, new_energy, diff};
+    double new_energy = energy_builder(new_state);
+    double diff = new_energy - previous_energy;
+    wrapper = {new_energy, diff};
     auto now = std::chrono::high_resolution_clock::now();
-    generic_scf_printer(wrapper, iter, now - start_scf, print_level);
+    const double time_consumed = (now - start_scf).count();
+    generic_scf_printer<SimpleSCFWrapper>(wrapper, time_consumed, iter, print_level, false);
     if(std::abs(diff) < energy_tolerance) {
 
       for (int i = 0; i < total_length; i++) {
@@ -210,54 +263,6 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
 
   throw Error("SCF did not converge.");
 }
-
-
-template<typename SCFWrapper, typename T>
-Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
-                                        const double computation_time,
-                                        const int iter,
-                                        const int print_level = 1,
-                                        const bool print_header = false) -> int {
-
-  int width = 18;
-  int precision = 8;
-
-  if (print_level > 2) {
-    width = 27;
-    precision = 17;
-  }
-
-  int total_length = 0;
-
-  if (print_level == 1) {
-    const double energy = state.positional_expectation();
-    total_length = 6 + width * 2;
-
-    if (print_header) {
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
-
-      fmt::print("{:>{}}", "|Iter|", 6);
-      fmt::print("{:>{}}", "Time |", width);
-      fmt::print("{:>{}}", "Energy |", width);
-      fmt::print("{:>{}}", "Energy Diff |", width);
-      fmt::print("\n");
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
-    }
-
-    fmt::print("{:>{}}", iter, 6);
-    const arma::rowvec combined{computation_time, state.energy, state.diff};
-    print(combined, width, precision);
-  }
-
-  return total_length;
-
-};
 
 }
 
