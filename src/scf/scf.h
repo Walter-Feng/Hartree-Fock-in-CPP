@@ -6,6 +6,7 @@
 #include <chrono>
 #include <json.hpp>
 
+#include "util/json.h"
 #include "util/printer.h"
 #include "util/error.h"
 
@@ -48,6 +49,44 @@ struct SCFResult{
   FockMatrix<T> fock;
 
   double energy;
+
+  [[nodiscard]] nlohmann::json to_json() const {
+
+    const auto n_items = eigenvalues.size();
+    assert(orbitals.size() == n_items);
+    assert(occupations.size() == n_items);
+    assert(density.size() == n_items);
+    assert(overlap.size() == n_items);
+    assert(fock.size() == n_items);
+
+    if(n_items == 1) {
+      nlohmann::json result;
+      util::put(result, "eigenvalues", eigenvalues[0]);
+      util::put(result, "orbitals", orbitals[0]);
+      util::put(result, "occupations", occupations[0]);
+      util::put(result, "density", density[0]);
+      util::put(result, "overlap", overlap[0]);
+      util::put(result, "fock", fock[0]);
+
+      return result;
+    } else {
+      nlohmann::json::array_t array;
+      for(int i=0; i<n_items; i++) {
+        nlohmann::json channel;
+        util::put(channel, "eigenvalues", eigenvalues[i]);
+        util::put(channel, "orbitals", orbitals[i]);
+        util::put(channel, "occupations", occupations[i]);
+        util::put(channel, "density", density[i]);
+        util::put(channel, "overlap", overlap[i]);
+        util::put(channel, "fock", fock[i]);
+
+        array.push_back(array);
+
+        return array;
+      }
+    }
+  }
+
 };
 
 template<class State>

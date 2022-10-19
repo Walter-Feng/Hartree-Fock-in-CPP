@@ -19,6 +19,8 @@ double overlap_integral(const GaussianFunctionPair & pair);
 
 arma::mat overlap_integral(const basis::Basis & basis);
 
+arma::mat kinetic_integral(const basis::Basis & basis);
+
 double electron_repulsive_integral(const GaussianFunction & A,
                                    const GaussianFunction & B,
                                    const GaussianFunction & C,

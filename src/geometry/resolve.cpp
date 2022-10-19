@@ -3,7 +3,6 @@
 namespace hfincpp {
 namespace util {
 
-template<>
 geometry::Atoms resolve(const nlohmann::json & pt) {
 
   std::vector<std::string> symbols;

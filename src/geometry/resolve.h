@@ -11,8 +11,7 @@
 namespace hfincpp {
 namespace util {
 
-extern
-template
+template<>
 geometry::Atoms resolve(const nlohmann::json & pt);
 
 

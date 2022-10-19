@@ -58,6 +58,10 @@ add_library(libHFINCPP
         src/integral/rys_quadrature.cpp
 
         src/scf/scf.cpp
+        src/scf/occupation.cpp
+
+        src/hf/rhf.cpp
+        
         src/mixing/simple_mixing.cpp
         )
 

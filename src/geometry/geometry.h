@@ -16,6 +16,7 @@ struct Atoms {
   int charge;
 
   int n_atoms() const;
+  int n_elec() const;
 
 };
 

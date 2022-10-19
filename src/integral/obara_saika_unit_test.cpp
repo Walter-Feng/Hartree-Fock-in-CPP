@@ -19,5 +19,8 @@ TEST_CASE("Check Basis struct") {
     hfincpp::basis::Basis basis(atoms, "cc-pvdz");
 
     const arma::mat overlap = overlap_integral(basis);
+    const arma::mat kinetic = kinetic_integral(basis);
+    kinetic.print();
+
   }
 }

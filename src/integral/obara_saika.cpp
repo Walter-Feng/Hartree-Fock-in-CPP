@@ -240,6 +240,47 @@ arma::mat overlap_integral(const basis::Basis & basis) {
   return overlap;
 }
 
+arma::mat kinetic_integral(const basis::Basis & basis) {
+
+  arma::mat kinetic(basis.n_functions(), basis.n_functions());
+
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = i; j < basis.n_functions(); j++) {
+      const auto & function_i = basis.functions[i];
+      const auto n_gto_from_i = function_i.coefficients.n_elem;
+      const auto & function_j = basis.functions[j];
+      const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+      double value = 0;
+      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+          const GaussianFunction gto_function_i{function_i.center,
+                                                function_i.angular,
+                                                function_i.exponents(gto_i),
+                                                function_i.coefficients(gto_i)};
+
+          const GaussianFunction gto_function_j{function_j.center,
+                                                function_j.angular,
+                                                function_j.exponents(gto_j),
+                                                function_j.coefficients(gto_j)};
+
+          const auto laplace_operator_on_j = gto_function_j.laplace();
+
+          for(const auto & gto_k : laplace_operator_on_j) {
+            value += overlap_integral(gto_function_i, gto_k);
+          }
+        }
+      }
+
+      kinetic(i, j) = - 0.5 * value;
+      kinetic(j, i) = - 0.5 * value;
+    }
+  }
+
+  return kinetic;
+}
+
 //Calculate the Coulomb Integral of two gaussian function
 double
 electron_repulsive_integral(const double ra[3],

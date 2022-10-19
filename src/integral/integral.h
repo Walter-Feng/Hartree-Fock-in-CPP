@@ -12,6 +12,9 @@ struct GaussianFunction {
   arma::Col<int>::fixed<3> angular;
   double exponent;
   double coef;
+
+  [[nodiscard]] std::vector<GaussianFunction> gradient(int xyz_index) const;
+  [[nodiscard]] std::vector<GaussianFunction> laplace() const;
 };
 
 struct ERI {

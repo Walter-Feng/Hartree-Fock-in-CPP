@@ -11,4 +11,8 @@ int Atoms::n_atoms() const {
   return atomic_numbers.n_elem;
 }
 
+int Atoms::n_elec() const {
+  return arma::sum(atomic_numbers) - charge;
+}
+
 }
