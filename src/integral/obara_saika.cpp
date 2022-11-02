@@ -216,8 +216,8 @@ arma::mat overlap_integral(const basis::Basis & basis) {
       const auto n_gto_from_j = function_j.coefficients.n_elem;
 
       double value = 0;
-      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
-        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+      for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
           const GaussianFunction gto_function_i{function_i.center,
                                                 function_i.angular,
                                                 function_i.exponents(gto_i),
@@ -253,8 +253,8 @@ arma::mat kinetic_integral(const basis::Basis & basis) {
       const auto n_gto_from_j = function_j.coefficients.n_elem;
 
       double value = 0;
-      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
-        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+      for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
           const GaussianFunction gto_function_i{function_i.center,
                                                 function_i.angular,
                                                 function_i.exponents(gto_i),

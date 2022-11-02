@@ -3,10 +3,10 @@
 
 #include <armadillo>
 #include <functional>
-#include <chrono>
 #include <json.hpp>
 
 #include "util/json.h"
+#include "util/time.h"
 #include "util/printer.h"
 #include "util/error.h"
 
@@ -48,14 +48,14 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
   int width = 18;
   int precision = 8;
 
-  if (print_level > 2) {
+  if (print_level >= 2) {
     width = 27;
     precision = 17;
   }
 
   int total_length = 0;
 
-  if (print_level == 1) {
+  if (print_level >= 1) {
     total_length = 6 + width * 3;
 
     if (print_header) {
@@ -65,8 +65,8 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
       fmt::print("\n");
 
       fmt::print("{:>{}}", "|Iter|", 6);
-      fmt::print("{:>{}}", "Time |", width);
-      fmt::print("{:>{}}", "Energy |", width);
+      fmt::print("{:>{}}", "Time / s |", width);
+      fmt::print("{:>{}}", "Energy / a.u. |", width);
       fmt::print("{:>{}}", "Energy Diff |", width);
       fmt::print("\n");
       for (int i = 0; i < total_length; i++) {
@@ -118,7 +118,7 @@ struct SCFResult {
       return result;
     } else {
       nlohmann::json::array_t array;
-      for (int i = 0; i < n_items; i++) {
+      for (arma::uword i = 0; i < n_items; i++) {
         nlohmann::json channel;
         util::put(channel, "eigenvalues", eigenvalues[i]);
         util::put(channel, "orbitals", orbitals[i]);
@@ -132,6 +132,8 @@ struct SCFResult {
         return array;
       }
     }
+
+    __builtin_unreachable();
   }
 
 };
@@ -157,7 +159,7 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
   const int total_length =
       generic_scf_printer<SimpleSCFWrapper>(wrapper, 0.0, 0, print_level, true);
 
-  auto start_scf = std::chrono::high_resolution_clock::now();
+ Timer scf_time;
 
   UpdateMethod updater = update_method;
   DensityMatrix<T> previous_state = initial;
@@ -179,7 +181,7 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
     arma::mat eigenvalues(n_ao, fock_matrices.n_slices);
     arma::Cube<T> orbitals(n_ao, n_ao, fock_matrices.n_slices);
     arma::mat occupation_vectors(n_ao, fock_matrices.n_slices);
-    for (int i = 0; i < fock_matrices.n_slices; i++) {
+    for (arma::uword i = 0; i < fock_matrices.n_slices; i++) {
       arma::cx_vec eigvals;
       arma::cx_mat eigvecs;
 
@@ -217,18 +219,17 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
     double new_energy = energy_builder(new_state);
     double diff = new_energy - previous_energy;
     wrapper = {new_energy, diff};
-    auto now = std::chrono::high_resolution_clock::now();
-    const double time_consumed = (now - start_scf).count();
-    generic_scf_printer<SimpleSCFWrapper>(wrapper, time_consumed, iter,
+    generic_scf_printer<SimpleSCFWrapper>(wrapper, scf_time.elapsed(), iter,
                                           print_level, false);
     if (std::abs(diff) < energy_tolerance) {
+      if(print_level >= 1) {
+        for (int i = 0; i < total_length; i++) {
+          fmt::print("=");
+        }
+        fmt::print("\n");
 
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
+        fmt::print("\n");
       }
-      fmt::print("\n");
-
-      fmt::print("\n");
 
       return {eigenvalues, orbitals, occupation_vectors, new_state, overlap,
               fock_matrices, new_energy};

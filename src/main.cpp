@@ -25,6 +25,10 @@ int main(const int argc, const char * argv[]) {
   args::Positional<std::string> input_flag(parser, "input",
                                            "The input file (in json format)");
 
+  args::ValueFlag<std::string> str_input(parser, "string", "String form of json input", {'s'});
+  args::Flag print_json(parser, "json", "Print Json", {'j'});
+
+
   try {
     parser.ParseCLI(argc, argv);
   }
@@ -48,11 +52,18 @@ int main(const int argc, const char * argv[]) {
 
   std::ifstream input_file_stream(args::get(input_flag));
   nlohmann::json input;
-  input_file_stream >> input;
+  if(str_input) {
+    input = nlohmann::json::parse(args::get(str_input));
+  } else {
+    input_file_stream >> input;
+  }
 
   nlohmann::json result = run(input);
 
-  fmt::print("Total time elapsed: {} s\n", global_time.elapsed());
+  if(input["print_level"] >= 1) {
+    fmt::print("Total time elapsed: {} s\n", global_time.elapsed());
+  }
+
 
   return 0;
 

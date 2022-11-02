@@ -31,7 +31,7 @@ scf::FockBuilder<double> generate_fock_builder(const basis::Basis & basis,
   return [n_ao, H0,
       two_electron_integral](const scf::DensityMatrix<double> & density) {
     scf::FockMatrix<double> result(arma::size(density));
-    for (auto i = 0; i < density.n_slices; i++) {
+    for (arma::uword i = 0; i < density.n_slices; i++) {
       result.slice(i) = H0 +
                         arma::reshape(
                             two_electron_integral *
@@ -63,7 +63,7 @@ generate_energy_builder(const geometry::Atoms & atoms,
   return [H0, two_electron_integral, repulsion_among_cores](
       const scf::DensityMatrix<double> & density) {
     double result = 0;
-    for (auto i = 0; i < density.n_slices; i++) {
+    for (arma::uword i = 0; i < density.n_slices; i++) {
       result +=
          0.5 * arma::dot(arma::vectorise(density.slice(i)),
                     two_electron_integral * arma::vectorise(density.slice(i)))
@@ -79,9 +79,20 @@ nlohmann::json rhf(const nlohmann::json & input,
                    const geometry::Atoms & atoms,
                    const basis::Basis & basis) {
 
+  const int print_level = input.at("print_level");
+  double hf_timer_pool = 0;
+  Timer hf_timer;
+
   scf::OverlapMatrix<double> overlap(basis.n_functions(), basis.n_functions(),
                                      1);
   overlap.slice(0) = integral::obara_saika::overlap_integral(basis);
+
+  double overlap_build_time = hf_timer.elapsed() - hf_timer_pool;
+  hf_timer_pool += overlap_build_time;
+
+  if (print_level > 1) {
+    fmt::print("overlap matrix build comsumed: {} s\n", format(overlap_build_time));
+  }
 
   const arma::mat coulomb_integral =
       integral::rys_quadrature::electron_repulsive_integral(basis);
@@ -105,7 +116,17 @@ nlohmann::json rhf(const nlohmann::json & input,
   const arma::mat two_electron_integral =
       coulomb_integral - 0.5 * exchange_integral;
 
+  double two_electron_integral_build_time = hf_timer.elapsed() - hf_timer_pool;
+  hf_timer_pool += two_electron_integral_build_time;
+  if (print_level > 1) {
+    fmt::print("2-electron integral build comsumed: {} s\n", format(two_electron_integral_build_time));
+  }
   const arma::mat H0 = core_hamiltonian(atoms, basis);
+  double one_electron_integral_build_time = hf_timer.elapsed() - hf_timer_pool;
+  hf_timer_pool += one_electron_integral_build_time;
+  if(print_level > 1) {
+    fmt::print("1-electron integral build comsumed: {} s\n", format(one_electron_integral_build_time));
+  }
 
   const double n_elec_per_orb = 2.0;
   const scf::OccupationBuilder occupation_builder =
@@ -124,7 +145,7 @@ nlohmann::json rhf(const nlohmann::json & input,
   const std::string initial_guess_method = input.at("initial_guess");
   const int max_iter = input.at("max_iter");
   const double energy_tolerance = input.at("energy_tolerance");
-  const int print_level = input.at("print_level");
+
   if (initial_guess_method == "H0") {
     const arma::mat H0 = core_hamiltonian(atoms, basis);
 

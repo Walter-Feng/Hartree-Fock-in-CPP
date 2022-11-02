@@ -376,10 +376,10 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
 
 
           double value = 0;
-          for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
-            for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
-              for (int gto_k = 0; gto_k < n_gto_from_k; gto_k++) {
-                for (int gto_l = 0; gto_l < n_gto_from_l; gto_l++) {
+          for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+            for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+              for (arma::uword gto_k = 0; gto_k < n_gto_from_k; gto_k++) {
+                for (arma::uword gto_l = 0; gto_l < n_gto_from_l; gto_l++) {
                   const GaussianFunction gto_function_i{function_i.center,
                                                         function_i.angular,
                                                         function_i.exponents(
@@ -621,8 +621,8 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
       const auto n_gto_from_j = function_j.coefficients.n_elem;
 
       double value = 0;
-      for (int gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
-        for (int gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+      for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (arma::uword gto_j = gto_i; gto_j < n_gto_from_j; gto_j++) {
           const GaussianFunction gto_function_i{function_i.center,
                                                 function_i.angular,
                                                 function_i.exponents(gto_i),

@@ -42,7 +42,7 @@ Basis::Basis(const geometry::Atoms & atoms,
 
         const auto exponents_in_strings = ith_layer["exponents"];
 
-        for (int ith_shell = 0;
+        for (size_t ith_shell = 0;
              ith_shell < ith_layer_coefficients.size(); ith_shell++) {
 
           const auto angular_momentum = ith_layer["angular_momentum"];
@@ -77,14 +77,14 @@ Basis::Basis(const geometry::Atoms & atoms,
           const auto coefficients_in_strings =
               ith_layer_coefficients[ith_shell];
 
-          const int n_functions = coefficients_in_strings.size();
+          const size_t n_functions = coefficients_in_strings.size();
 
           assert(exponents_in_strings.size() == n_functions);
 
           arma::vec coefficients(n_functions);
           arma::vec exponents(n_functions);
 
-          for (int i = 0; i < n_functions; i++) {
+          for (size_t i = 0; i < n_functions; i++) {
             const std::string coefficient = coefficients_in_strings[i];
             const std::string exponent = exponents_in_strings[i];
             coefficients(i) = std::stod(coefficient);
