@@ -1,0 +1,3 @@
+[submodule "external/external/libcint"]
+	path = external/external/libcint
+	url = https://github.com/sunqm/libcint
