@@ -363,7 +363,7 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
 #pragma omp parallel for collapse(4)
   for (int i = 0; i < n_ao; i++) {
     for (int j = 0; j <= i; j++) {
-      for (int k = 0; k < n_ao; k++) {
+      for (int k = 0; k <= i; k++) {
         for (int l = 0; l <= k; l++) {
           const auto & function_i = basis.functions[i];
           const auto n_gto_from_i = function_i.coefficients.n_elem;
@@ -425,6 +425,9 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
       }
     }
   }
+
+  eri = eri + eri.t();
+  eri.diag() /= 2.0;
 
   return eri;
 
@@ -906,5 +909,82 @@ double electron_repulsive_integral(const ERI & eri_info,
          * eri_info.B.coef
          * eri_info.C.coef
          * eri_info.D.coef;
+}
+
+arma::mat electron_repulsive_integral(
+    const basis::Basis & basis,
+    const arma::Mat<int>::fixed<3, 4> & derivative_operator) {
+
+  const auto n_ao = basis.n_functions();
+  const auto pair_size = n_ao * n_ao;
+
+  arma::mat eri(pair_size, pair_size);
+
+#pragma omp parallel for collapse(4)
+  for (int i = 0; i < n_ao; i++) {
+    for (int j = 0; j < n_ao; j++) {
+      for (int k = 0; k < n_ao; k++) {
+        for (int l = 0; l < n_ao; l++) {
+          const auto & function_i = basis.functions[i];
+          const auto n_gto_from_i = function_i.coefficients.n_elem;
+          const auto & function_j = basis.functions[j];
+          const auto n_gto_from_j = function_j.coefficients.n_elem;
+          const auto & function_k = basis.functions[k];
+          const auto n_gto_from_k = function_k.coefficients.n_elem;
+          const auto & function_l = basis.functions[l];
+          const auto n_gto_from_l = function_l.coefficients.n_elem;
+
+
+          double value = 0;
+          for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+            for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+              for (arma::uword gto_k = 0; gto_k < n_gto_from_k; gto_k++) {
+                for (arma::uword gto_l = 0; gto_l < n_gto_from_l; gto_l++) {
+                  const GaussianFunction gto_function_i{function_i.center,
+                                                        function_i.angular,
+                                                        function_i.exponents(
+                                                            gto_i),
+                                                        function_i.coefficients(
+                                                            gto_i)};
+
+                  const GaussianFunction gto_function_j{function_j.center,
+                                                        function_j.angular,
+                                                        function_j.exponents(
+                                                            gto_j),
+                                                        function_j.coefficients(
+                                                            gto_j)};
+
+                  const GaussianFunction gto_function_k{function_k.center,
+                                                        function_k.angular,
+                                                        function_k.exponents(
+                                                            gto_k),
+                                                        function_k.coefficients(
+                                                            gto_k)};
+
+                  const GaussianFunction gto_function_l{function_l.center,
+                                                        function_l.angular,
+                                                        function_l.exponents(
+                                                            gto_l),
+                                                        function_l.coefficients(
+                                                            gto_l)};
+
+                  const ERI eri_info{gto_function_i, gto_function_j,
+                                     gto_function_k, gto_function_l};
+
+                  value += electron_repulsive_integral(eri_info, derivative_operator);
+                }
+              }
+            }
+          }
+
+          eri(i + n_ao * j, k + n_ao * l) = value;
+        }
+      }
+    }
+  }
+
+  return eri;
+
+
 }
 }

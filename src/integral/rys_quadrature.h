@@ -83,8 +83,13 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
 
 
 namespace gradient {
-double electron_repulsive_integral(const ERI & eri_info,
-                                   const arma::Mat<int>::fixed<3, 4> & derivative_operator);
+double electron_repulsive_integral(
+    const ERI & eri_info,
+    const arma::Mat<int>::fixed<3, 4> & derivative_operator);
+
+arma::mat electron_repulsive_integral(
+    const basis::Basis & basis,
+    const arma::Mat<int>::fixed<3, 4> & derivative_operator);
 }
 
 namespace nuclear_attraction {

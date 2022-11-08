@@ -20,7 +20,6 @@ TEST_CASE("Check Basis struct") {
 
     const arma::mat overlap = overlap_integral(basis);
     const arma::mat kinetic = kinetic_integral(basis);
-    kinetic.print();
 
   }
 }
