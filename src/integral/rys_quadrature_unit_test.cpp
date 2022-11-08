@@ -254,31 +254,4 @@ TEST_CASE("Check Rys quadrature integral implementation") {
     CHECK(std::abs(diff) < 1e-10);
   }
 
-  SECTION("Gradient of ERI in basis") {
-    hfincpp::geometry::Atoms atoms;
-    atoms.atomic_numbers = {1, 1};
-    atoms.xyz = {
-        {0, 3.77945},
-        {0, 0},
-        {0, 0}
-    };
-
-    atoms.symbols = {"H", "H"};
-
-    arma::Mat<int>::fixed<3, 4> derivative_operator = {
-        {1, 0, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}
-    };
-
-    hfincpp::basis::Basis basis(atoms, "6-31g");
-
-    const arma::mat integral = electron_repulsive_integral(basis);
-
-    integral.print("integral");
-    const arma::mat gradient =
-        gradient::electron_repulsive_integral(basis, derivative_operator);
-    gradient.print("gradient");
-  }
-
 }
