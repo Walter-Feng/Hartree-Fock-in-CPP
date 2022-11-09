@@ -1,3 +1,9 @@
 [submodule "external/libcint"]
 	path = external/libcint
 	url = https://github.com/sunqm/libcint
+[submodule "external/Catch2"]
+	path = external/Catch2
+	url = https://github.com/catchorg/Catch2.git
+[submodule "external/args"]
+	path = external/args
+	url = https://github.com/Taywee/args.git

@@ -1,4 +1,4 @@
-#include <catch.hpp>
+#include "catch.h"
 
 #include "rys_quadrature.h"
 

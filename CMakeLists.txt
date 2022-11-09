@@ -146,18 +146,15 @@ target_link_libraries(libHFINCPP ${Boost_LIBRARIES})
 
 #######Catch2#######
 
-add_library(catch2 SHARED external/Catch2/Catch_main.cpp)
-include_directories("external/Catch2")
-target_include_directories(catch2 PUBLIC external/Catch2/)
+add_subdirectory(external/Catch2)
+include_directories("external/Catch2/src")
+target_link_libraries(libHFINCPP Catch2WithMain)
 
 ########fmt#########
-
-message("\n This is {fmt} library.")
 add_subdirectory(external/fmt)
 include_directories("external/fmt/include")
 target_link_libraries(libHFINCPP fmt)
 add_definitions(-DHAVE_FMT)
-message("\n")
 
 ########args#########
 add_subdirectory(external/args)
@@ -176,13 +173,9 @@ add_definitions(-DHAVE_LIBCINT)
 #########json#########
 add_library(json SHARED external/nlohmann/json.cpp)
 include_directories("external/nlohmann")
-target_include_directories(catch2 PUBLIC external/nlohmann/)
+target_include_directories(libHFINCPP PUBLIC external/nlohmann/)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-
-
-
 
 
 ####################
@@ -195,11 +188,11 @@ add_executable(test_basis
         src/basis/basis_unit_test.cpp
         )
 
-target_link_libraries(test_basis catch2 libHFINCPP)
+target_link_libraries(test_basis libHFINCPP)
 
 add_executable(test_integral
         src/integral/obara_saika_unit_test.cpp
         src/integral/rys_quadrature_unit_test.cpp
         )
 
-target_link_libraries(test_integral catch2 libHFINCPP)
+target_link_libraries(test_integral libHFINCPP)
