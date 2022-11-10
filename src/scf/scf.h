@@ -108,6 +108,7 @@ struct SCFResult {
 
     if (n_items == 1) {
       nlohmann::json result;
+      util::put(result, "energy", energy);
       util::put(result, "eigenvalues", eigenvalues.col(0));
       util::put(result, "orbitals", orbitals.slice(0));
       util::put(result, "occupations", occupations.col(0));
@@ -128,9 +129,13 @@ struct SCFResult {
         util::put(channel, "fock", fock.slice(0));
 
         array.push_back(array);
-
-        return array;
       }
+
+      nlohmann::json result;
+      result["channels"] = array;
+      result["energy"] = energy;
+
+      return result;
     }
 
     __builtin_unreachable();

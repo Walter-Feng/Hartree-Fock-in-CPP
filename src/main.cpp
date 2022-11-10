@@ -20,13 +20,19 @@ int main(const int argc, const char * argv[]) {
                               "using full C++ standard."
                               "Written by Walter Feng (github.com/Walter-Feng)");
 
-  args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+  args::HelpFlag help(parser, "help",
+                      "Display this help menu", {'h', "help"});
 
   args::Positional<std::string> input_flag(parser, "input",
                                            "The input file (in json format)");
 
-  args::ValueFlag<std::string> str_input(parser, "string", "String form of json input", {'s'});
-  args::Flag print_json(parser, "json", "Print Json", {'j'});
+  args::ValueFlag<std::string> str_input(parser, "string",
+                                         "String form of json input", {'s'});
+
+  args::Flag print_json(parser, "json",
+                        "Print as json format."
+                        " Remember to set print_level = -1 if you would like to "
+                        "do hfincpp input.json > output.json", {'j'});
 
 
   try {

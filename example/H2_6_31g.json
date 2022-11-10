@@ -1,0 +1,21 @@
+{
+  "geometry": {
+    "atoms": [
+      ["H", 0, 0, 0],
+      ["H", 2, 0, 0]
+    ],
+
+    "charge": 0
+  },
+
+  "basis": "6-31g",
+
+  "method": "rhf",
+
+  "energy_tolerance": 1e-6,
+  "max_iter": 100,
+  "initial_guess": "H0",
+  "mixing": "simple_mixing",
+  "mixing_alpha": 0.2,
+  "print_level": 1
+}
