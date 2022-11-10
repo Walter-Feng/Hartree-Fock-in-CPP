@@ -108,24 +108,24 @@ struct SCFResult {
 
     if (n_items == 1) {
       nlohmann::json result;
-      util::put(result, "eigenvalues", eigenvalues[0]);
-      util::put(result, "orbitals", orbitals[0]);
-      util::put(result, "occupations", occupations[0]);
-      util::put(result, "density", density[0]);
-      util::put(result, "overlap", overlap[0]);
-      util::put(result, "fock", fock[0]);
+      util::put(result, "eigenvalues", eigenvalues.col(0));
+      util::put(result, "orbitals", orbitals.slice(0));
+      util::put(result, "occupations", occupations.col(0));
+      util::put(result, "density", density.slice(0));
+      util::put(result, "overlap", overlap.slice(0));
+      util::put(result, "fock", fock.slice(0));
 
       return result;
     } else {
       nlohmann::json::array_t array;
       for (arma::uword i = 0; i < n_items; i++) {
         nlohmann::json channel;
-        util::put(channel, "eigenvalues", eigenvalues[i]);
-        util::put(channel, "orbitals", orbitals[i]);
-        util::put(channel, "occupations", occupations[i]);
-        util::put(channel, "density", density[i]);
-        util::put(channel, "overlap", overlap[i]);
-        util::put(channel, "fock", fock[i]);
+        util::put(channel, "eigenvalues", eigenvalues.col(0));
+        util::put(channel, "orbitals", orbitals.slice(0));
+        util::put(channel, "occupations", occupations.col(0));
+        util::put(channel, "density", density.slice(0));
+        util::put(channel, "overlap", overlap.slice(0));
+        util::put(channel, "fock", fock.slice(0));
 
         array.push_back(array);
 

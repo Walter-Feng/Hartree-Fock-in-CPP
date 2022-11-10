@@ -105,11 +105,11 @@ Basis::Basis(const geometry::Atoms & atoms,
            *  This will give you 1 + 2 + ... + (i_angular_momentum + 1).
            *  Yeah these two match.
            */
-          for (int ax = 0; ax <= i_angular_momentum; ax++) {
+          for (int ax = i_angular_momentum; ax >= 0; ax--) {
 
             const std::string ax_string = ax ? "x^" + std::to_string(ax) : "";
 
-            for (int ay = 0; ay <= i_angular_momentum - ax; ay++) {
+            for (int ay = i_angular_momentum - ax; ay >= 0; ay--) {
 
               const std::string ay_string = ay ? "y^" + std::to_string(ay) : "";
 
@@ -132,7 +132,7 @@ Basis::Basis(const geometry::Atoms & atoms,
                   % arma::pow(8.0 * exponents, i_angular_momentum / 2.0) *
                   scalar_factor;
 
-              std::string label = atoms.symbols[i_atom] + " ";
+              std::string label = std::to_string(i_atom + 1) + atoms.symbols[i_atom] + " ";
               label += angular_string;
               label += ax_string;
               label += ay_string;

@@ -64,6 +64,10 @@ int main(const int argc, const char * argv[]) {
     fmt::print("Total time elapsed: {} s\n", global_time.elapsed());
   }
 
+  if(print_json) {
+    std::cout << std::setw(4) << result << std::endl;
+  }
+
 
   return 0;
 

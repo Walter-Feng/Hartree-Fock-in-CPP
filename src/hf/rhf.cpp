@@ -188,7 +188,9 @@ nlohmann::json rhf(const nlohmann::json & input,
                 {(double) atoms.n_elec()},
                 max_iter, energy_tolerance, print_level);
 
-    return scf_result.to_json();
+    auto scf_json = scf_result.to_json();
+    util::put(scf_json, "basis_labels", basis.function_labels);
+    return scf_json;
   } else {
     throw Error("Only simple mixing method is allowed in current method");
   }
