@@ -6,6 +6,16 @@ extern "C" {
 #include <rys_roots.h>
 }
 
+/* The equations behind all the codes here are from the paper
+ * "Efficient Electronic Integrals and their Generalized Derivatives for
+ * Object Oriented Implementations of Electronic Structure Calculations",
+ * by N. FLOCKE, V. LOTRICH, with DOI 10.1002/jcc.21018.
+ * Variable "term1" / "term2", for example, refer to 1st term / 2nd term in the
+ * equations explicitly given in the paper, so no worry if you feel lost
+ * with the meaning behind these variables.
+ * At least, much better than the traditional naming conventions in academic codes.
+ */
+
 namespace hfincpp::integral::rys_quadrature {
 
 double RysPolynomial::operator()(const double t_square) const {
@@ -32,6 +42,29 @@ RysPolynomial RysPolynomial::operator*(const RysPolynomial & another) const {
   return {new_coef};
 }
 
+/* There are two types of recursion relations (RR) mentioned in the paper, which are
+ * horizontal RR (HRR) and vertical RR (VRR). What HRR for b->a does is transferring
+ * angular momentum from the second orbital, i.e. b, to the first one, i.e. a.
+ * This can be like transforming ERI(a, b, c, d) -> ERI(a+b, 0, c, d). Well of
+ * course there are some residues. It also does similar thing for d->c conversion.
+ * After these two, we can focus on ERI types ERI(a, 0, c, 0).
+ * Then there are two VRR, which focus on eliminating a and c respectively,
+ * eventually generating a polynomial of t^2 multiplied by ERI(0,0,0,0).
+ * This polynomial will be thrown into a list of roots and weights
+ * and generate the correct ERI values, marking an end to this ERI journey.
+ *
+ * Therefore, the preferred way of executing the functions is
+ * HRR(b->a) => HRR(d->c) => VRR(a) => VRR(c)
+ *
+ * The first four functions explicitly translate the equations into codes, not
+ * explicitly performing the recursion on the computer side.
+ *
+ * We use std::vector<IntegralInfo> as output here,
+ * representing a summation of ERIs in different configuration.
+ * An explicit example can be an HRR equation from b to a,
+ * I_x (a, b+1, c, d) = I_x(a+1, b, c, d) + (Ax - Bx) I_x(a, b, c, d)
+ *      (*this) -> std::vector{   term1     ,          term2       }
+ * */
 
 std::vector<IntegralInfo>
 IntegralInfo::horizontal_recursion_relation_b_to_a() const {
@@ -184,6 +217,22 @@ IntegralInfo::vertical_recursion_relation_c() const {
   }
 }
 
+/* Now we can focus only on the computer side of performing recursion,
+ * after implementing the HRR/VRR equations.
+ *
+ * As a reminder, we use std::vector<IntegralInfo> here representing
+ * a summation of ERIs in different configuration.
+ *
+ * Say we encounter a term i_info in this list info, noted as ERI(a,b,c,d)
+ * and in HRR we would like to convert it to summation of form ERI(a', 0, c', 0).
+ * First step is definitely using the HRR equations implemented above.
+ * Because we are doing recursion relations, the output, {term1, term2...}
+ * can also have non-zero b's and d's. Sooo here comes the key concept of
+ * performing recursion, we apply HRR once again to the output.
+ * This will help perform the recursion over and over again until all b's and
+ * d's are eliminated. Oh don't forget to insert the results back to the
+ * positions of original ERI's.
+ */
 std::vector<IntegralInfo>
 horizontal_recursion_relation(const std::vector<IntegralInfo> & info) {
 
@@ -353,6 +402,12 @@ double electron_repulsive_integral(const ERI & eri_info) {
          * eri_info.D.coef;
 }
 
+/* The function here is trying to generate the whole ERI tensor (ijkl) for
+ * a specific basis. The tensor is interpreted as a matrix, with (ij) x (kl).
+ * To better understand this, a column vector represent a fixed (kl) combination,
+ * and originally (ij) can also be a matrix with i x j, but flattened as such vector.
+ * */
+
 arma::mat electron_repulsive_integral(const basis::Basis & basis) {
 
   const auto n_ao = basis.n_functions();
@@ -360,10 +415,26 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
 
   arma::mat eri(pair_size, pair_size);
 
+  /* omp command here is just an automatic parallelization parsing of for loops
+   * which has no technical significance. Forget it.
+   * Instead of iterating over n_ao for all (ijkl) indices,
+   * we can utilize the symmetry of [ij | kl],
+   * [ij|kl] = [ji|kl] = [ij|lk] = [kl|ij]
+   * These three "=" represent 2^3=8-fold symmetry.
+   * the symmetry [ij|kl] =[kl|ij] is slightly different from having symmetric matrix,
+   * as we will also be having symmetry for i <-> j and k <-> l which
+   * destroys it.
+   * To implement this symmetry we usually use shell-pairs that first generate
+   * lower-triangular (ij) as pair, and from this list of pairs we pick up
+   * (ij) - pair and (kl) - pair as arguments for the ERI, but in a
+   * lower-triangular manner. This will require some indexing that, well,
+   * not hard but slightly complicated to implement here.
+   * So only i<->j symmetry and k<->l symmetry implemented, 4-fold in total.
+   */
 #pragma omp parallel for collapse(4)
   for (int i = 0; i < n_ao; i++) {
     for (int j = 0; j <= i; j++) {
-      for (int k = 0; k <= i; k++) {
+      for (int k = 0; k < n_ao; k++) {
         for (int l = 0; l <= k; l++) {
           const auto & function_i = basis.functions[i];
           const auto n_gto_from_i = function_i.coefficients.n_elem;
@@ -425,9 +496,6 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis) {
       }
     }
   }
-
-  eri = eri + eri.t();
-  eri.diag() /= 2.0;
 
   return eri;
 
@@ -625,7 +693,7 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
 
       double value = 0;
       for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
-        for (arma::uword gto_j = gto_i; gto_j < n_gto_from_j; gto_j++) {
+        for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
           const GaussianFunction gto_function_i{function_i.center,
                                                 function_i.angular,
                                                 function_i.exponents(gto_i),

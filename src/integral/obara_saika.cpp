@@ -53,7 +53,20 @@ double Binomials(int n, int k) {
   return result;
 }
 
-// A special function set for calculating the transformation coefficient
+/*
+ * The functions below are directly based on a thesis
+ * May, Andrew James. Density fitting in explicitly correlated
+ * electronic structure theory. Diss. University of Bristol, 2006.
+ * They can also be referenced from the paper
+ * Obara, Shigeru, and A. Saika. "Efficient recursive computation of
+ * molecular integrals over Cartesian Gaussian functions."
+ * The Journal of chemical physics 84.7 (1986): 3963-3974.
+ * Only the overlap functions are used in actual code, as there seem to be
+ * some bugs with ERI, but too hard to find.
+ */
+
+// A special function set for calculating the transformation coefficient.
+// Mathematically equivalent to expanding (a+b)^n = c_ij a^i b^j
 double f(int k, int a, int b, double PA, double PB) {
   int i;
   double result;

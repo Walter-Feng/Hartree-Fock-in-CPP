@@ -14,6 +14,7 @@ struct GaussianFunction {
   double coef;
 
   [[nodiscard]] std::vector<GaussianFunction> gradient(int xyz_index) const;
+  // Laplace operator, \nabla \cdot \nabla
   [[nodiscard]] std::vector<GaussianFunction> laplace() const;
 };
 

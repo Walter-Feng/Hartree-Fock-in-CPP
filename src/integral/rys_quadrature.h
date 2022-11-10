@@ -9,6 +9,11 @@ namespace hfincpp {
 namespace integral {
 namespace rys_quadrature {
 
+/*
+ * Simple representation of polynomial,
+ * f(x) =  c0 + c1 x^1 + c2 x^2 + ...
+ * coef = {c0 , c1,      c2,    ....}
+ */
 struct RysPolynomial {
   arma::vec coef;
 

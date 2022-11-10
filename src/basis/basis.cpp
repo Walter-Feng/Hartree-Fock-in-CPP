@@ -46,6 +46,17 @@ Basis::Basis(const geometry::Atoms & atoms,
              ith_shell < ith_layer_coefficients.size(); ith_shell++) {
 
           const auto angular_momentum = ith_layer["angular_momentum"];
+
+          /* There are two formats of basis sets, one being Pople
+           * and not Pople (for example, cc-pvdz).
+           * The formats are just different, with Pople ones stacking SPDF..
+           * into one set of exponent / coefficient pairs for the same
+           * principal quantum number (n), while others stack orbitals with
+           * different n for a specific s/p/d/f orbital.
+           *
+           * Go check data/basis_set_exchange if I failed to explain
+           * it explicitly.
+           * */
           const bool is_pople_basis_set = angular_momentum.size() > 1;
 
           const int i_angular_momentum =
