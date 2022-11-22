@@ -20,11 +20,17 @@ As a comparison, the features in this program are:
 
    2. Tons of dependencies, including 
         Boost (you need to install yourself)
+        
         Armadillo (same as above)
+        
         sunqm/libcint (but only using its rys quadrature roots generator)
+        
         catchorg/Catch2
+        
         Taywee/args
+        
         fmtlib/fmt
+        
         nlohmann/json
 
    3. It is (in principle) able to use all the bases that have been published in Basis Set Exchange (https://www.basissetexchange.org).
