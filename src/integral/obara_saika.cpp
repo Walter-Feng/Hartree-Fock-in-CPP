@@ -1,41 +1,15 @@
 #include "obara_saika.h"
 
-#include <gsl/gsl_sf.h>
+#include <boost/math/special_functions.hpp>
 #include <cmath>
 
 namespace hfincpp::integral::obara_saika {
 
-// Calculate the complete Gamma function
-double Gamma(double z) {
-
-  const int a = 12;
-  static double c_space[12];
-  static double * c = nullptr;
-  int k;
-  double accm;
-
-  if (c == nullptr) {
-    double k1_factrl = 1.0; /* (k - 1)!*(-1)^k with 0!==1*/
-    c = c_space;
-    c[0] = sqrt(2.0 * M_PI);
-    for (k = 1; k < a; k++) {
-      c[k] = exp(a - k) * pow(a - k, k - 0.5) / k1_factrl;
-      k1_factrl *= -k;
-    }
-  }
-  accm = c[0];
-  for (k = 1; k < a; k++) {
-    accm += c[k] / (z + k);
-  }
-  accm *= exp(-(z + a)) * pow(z + a, z + 0.5); /* Gamma(z+1) */
-  return accm / z;
-}
-
-double Boys(double x, int n) {
-  if (std::abs(x) < 1e-8) return (1.0 / (1.0 + 2.0 * (double) n));
+double Boys(double x, int m) {
+  if (std::abs(x) < 1e-8) return (1.0 / (1.0 + 2.0 * m));
   else
-    return 0.5 * pow(x, -0.5 - n) *
-           (Gamma(0.5 + n) - gsl_sf_gamma_inc(0.5 + n, x));
+    return 0.5 * std::pow(x, -0.5 - m) *
+           (boost::math::tgamma(0.5 + m) - boost::math::tgamma(0.5 + m, x));
 }
 
 double Binomials(int n, int k) {
@@ -61,74 +35,8 @@ double Binomials(int n, int k) {
  * Obara, Shigeru, and A. Saika. "Efficient recursive computation of
  * molecular integrals over Cartesian Gaussian functions."
  * The Journal of chemical physics 84.7 (1986): 3963-3974.
- * Only the overlap functions are used in actual code, as there seem to be
- * some bugs with ERI, but too hard to find.
+ * Only the overlap functions are used in actual code.
  */
-
-// A special function set for calculating the transformation coefficient.
-// Mathematically equivalent to expanding (a+b)^n = c_ij a^i b^j
-double f(int k, int a, int b, double PA, double PB) {
-  int i;
-  double result;
-  result = 0;
-
-  for (i = 0; i <= k; i++) {
-    if (a < i || b - k + i < 0) {
-      continue;
-    }
-    if (abs(PA) < 1e-16 && a - i == 0 && abs(PB) < 1e-19 && b - k + i == 0) {
-      result += Binomials(a, i) * Binomials(b, k - i);
-    } else if (abs(PA) < 1e-16 && a - i == 0) {
-      result += Binomials(a, i) * Binomials(b, k - i) * pow(PB, b - k + i);
-    } else if (abs(PB) < 1e-19 && b - k + i == 0) {
-      result += Binomials(a, i) * Binomials(a, k - i) * pow(PA, a - i);
-    } else {
-      result += Binomials(a, i) * Binomials(a, k - i)
-                * pow(PA, a - i) * pow(PB, b - k + i);
-    }
-  }
-
-  return result;
-}
-
-std::vector<GaussianFunction>
-expand_function_pair(const GaussianFunctionPair & pair) {
-
-  const auto & A = pair.first;
-  const auto & B = pair.second;
-
-  const double zeta = A.exponent + B.exponent;
-  const double xi = A.exponent * B.exponent / zeta;
-  const arma::vec3 P = (A.exponent * A.center + B.exponent * B.center) / zeta;
-  const arma::vec3 from_B_to_A = A.center - B.center;
-  const double AB_norm_squared = arma::dot(from_B_to_A, from_B_to_A);
-
-  const double exponential_factor = std::exp(-xi * AB_norm_squared);
-
-  const arma::vec3 from_A_to_P = P - A.center;
-  const arma::vec3 from_B_to_P = P - B.center;
-
-  std::vector<GaussianFunction> result;
-  for (int i = 0; i <= A.angular[0] + B.angular[0]; i++) {
-    const double f_x = f(i, A.angular[0], B.angular[0], from_A_to_P[0],
-                         from_B_to_P[0]);
-    for (int j = 0; j <= A.angular[1] + B.angular[1]; j++) {
-      const double f_y = f(j, A.angular[1], B.angular[1], from_A_to_P[1],
-                           from_B_to_P[1]);
-      for (int k = 0; k <= A.angular[2] + B.angular[2]; k++) {
-        const double f_z = f(k, A.angular[2], B.angular[2], from_A_to_P[2],
-                             from_B_to_P[2]);
-
-        const double new_coef =
-            A.coef * B.coef * exponential_factor * f_x * f_y * f_z;
-
-        result.push_back({P, {i, j, k}, zeta, new_coef});
-      }
-    }
-  }
-
-  return result;
-}
 
 //Calculate the Overlap Integral of two gaussian function
 double overlap_integral(const double ra[3],
@@ -280,164 +188,210 @@ arma::mat kinetic_integral(const basis::Basis & basis) {
 
           const auto laplace_operator_on_j = gto_function_j.laplace();
 
-          for(const auto & gto_k : laplace_operator_on_j) {
+          for (const auto & gto_k: laplace_operator_on_j) {
             value += overlap_integral(gto_function_i, gto_k);
           }
         }
       }
 
-      kinetic(i, j) = - 0.5 * value;
-      kinetic(j, i) = - 0.5 * value;
+      kinetic(i, j) = -0.5 * value;
+      kinetic(j, i) = -0.5 * value;
     }
   }
 
   return kinetic;
 }
 
-//Calculate the Coulomb Integral of two gaussian function
+struct ERIIntermediate {
+  double zeta;
+  double eta;
+  double chi;
+  double rho;
+  arma::vec3 P;
+  arma::vec3 Q;
+  arma::vec3 W;
+};
+
 double
-electron_repulsive_integral(const double ra[3],
-                            const double rb[3],
-                            const int ax, const int ay, const int az,
-                            const int bx, const int by, const int bz,
-                            const double alpha,
-                            const double beta,
+electron_repulsive_integral(const GaussianFunction & A,
+                            const GaussianFunction & B,
+                            const GaussianFunction & C,
+                            const GaussianFunction & D,
+                            const ERIIntermediate & intermediate,
                             const int m) {
-  double zeta = alpha + beta;
-  double xi = alpha * beta / zeta;
-  double P[3];
-  double AB;
+  if (arma::any(A.angular < 0)
+      || arma::any(B.angular < 0)
+      || arma::any(C.angular < 0)
+      || arma::any(D.angular < 0)) {
+    return 0;
+  }
 
-  int i;
+  const auto & P = intermediate.P;
+  const auto & Q = intermediate.Q;
+  const auto & W = intermediate.W;
+  const auto & zeta = intermediate.zeta;
+  const auto & eta = intermediate.eta;
+  const auto & chi = intermediate.chi;
+  const auto & rho = intermediate.rho;
 
-  for (i = 0; i < 3; i++)
-    P[i] = (alpha * ra[i] + beta * rb[i]) / zeta;
 
-  AB = 0;
-  for (i = 0; i < 3; i++)
-    AB += (ra[i] - rb[i]) * (ra[i] - rb[i]);
+  for (int i = 0; i < 3; i++) {
+    auto reduced_A = A;
+    auto reduced_B = B;
+    auto reduced_C = C;
+    auto reduced_D = D;
 
-  // if one of the angular number goes below zero,
-  // it means it will not have contribution - the same as giving derivation to a constant
-  if (ax < 0 || ay < 0 || az < 0 || bx < 0 || by < 0 || bz < 0) return 0;
+    reduced_A.angular[i]--;
+    reduced_B.angular[i]--;
+    reduced_C.angular[i]--;
+    reduced_D.angular[i]--;
 
-    //Provide recurrence relation
-  else if (ax > 0)
-    return ((P[0] - ra[0]) *
-            electron_repulsive_integral(ra, rb, ax - 1, ay, az, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            (ax - 1) / 2.0 / alpha *
-            electron_repulsive_integral(ra, rb, ax - 2, ay, az, bx, by, bz,
-                                        alpha, beta, m) -
-            (ax - 1) / 2.0 / alpha * beta / zeta *
-            electron_repulsive_integral(ra, rb, ax - 2, ay, az, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            bx / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax - 1, ay, az, bx - 1, by, bz,
-                                        alpha, beta, m + 1));
+    if (A.angular[i] > 0) {
+      auto double_reduced_A = reduced_A;
+      double_reduced_A.angular[i]--;
 
-  else if (ay > 0)
-    return ((P[1] - ra[1]) *
-            electron_repulsive_integral(ra, rb, ax, ay - 1, az, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            (ay - 1) / 2.0 / alpha *
-            electron_repulsive_integral(ra, rb, ax, ay - 2, az, bx, by, bz,
-                                        alpha, beta, m) -
-            (ay - 1) / 2.0 / alpha * beta / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay - 2, az, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            by / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay - 1, az, bx, by - 1, bz,
-                                        alpha, beta, m + 1));
+      return (P[i] - A.center[i]) *
+             electron_repulsive_integral(reduced_A, B, C, D, intermediate, m)
+             + (W[i] - P[i]) *
+               electron_repulsive_integral(reduced_A, B, C, D, intermediate,
+                                           m + 1)
 
-  else if (az > 0)
-    return ((P[2] - ra[2]) *
-            electron_repulsive_integral(ra, rb, ax, ay, az - 1, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            (az - 1) / 2.0 / alpha *
-            electron_repulsive_integral(ra, rb, ax, ay, az - 2, bx, by, bz,
-                                        alpha, beta, m) -
-            (az - 1) / 2.0 / alpha * beta / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az - 2, bx, by, bz,
-                                        alpha, beta, m + 1) +
-            bz / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az - 1, bx, by, bz - 1,
-                                        alpha, beta, m + 1));
+             + 0.5 / zeta * reduced_A.angular[i] * (
+          electron_repulsive_integral(double_reduced_A, B, C, D, intermediate,
+                                      m)
+          - rho / zeta *
+            electron_repulsive_integral(double_reduced_A, B, C, D, intermediate,
+                                        m + 1)
+      ) + 0.5 / zeta * B.angular[i] * (
+          electron_repulsive_integral(reduced_A, reduced_B, C, D, intermediate,
+                                      m)
+          - rho / zeta *
+            electron_repulsive_integral(reduced_A, reduced_B, C, D,
+                                        intermediate, m + 1)
+      ) + 0.5 / chi * C.angular[i] *
+          electron_repulsive_integral(reduced_A, B, reduced_C, D, intermediate,
+                                      m + 1)
 
-  else if (bx > 0)
-    return ((P[0] - rb[0]) *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx - 1, by, bz,
-                                        alpha, beta, m + 1) +
-            (bx - 1) / 2.0 / beta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx - 2, by, bz,
-                                        alpha, beta, m) -
-            (bx - 1) / 2.0 / beta * alpha / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx - 2, by, bz,
-                                        alpha, beta, m + 1) +
-            ax / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax - 1, ay, az, bx - 1, by, bz,
-                                        alpha, beta, m + 1));
+             + 0.5 / chi * D.angular[i] *
+               electron_repulsive_integral(reduced_A, B, C, reduced_D,
+                                           intermediate,
+                                           m + 1);
+    }
 
-  else if (by > 0)
-    return ((P[1] - rb[1]) *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by - 1, bz,
-                                        alpha, beta, m + 1) +
-            (by - 1) / 2.0 / beta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by - 2, bz,
-                                        alpha, beta, m) -
-            (by - 1) / 2.0 / beta * alpha / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by - 2, bz,
-                                        alpha, beta, m + 1) +
-            ay / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay - 1, az, bx, by - 1, bz,
-                                        alpha, beta, m + 1));
+    if (B.angular[i] > 0) {
+      auto double_reduced_B = reduced_B;
+      double_reduced_B.angular[i]--;
 
-  else if (bz > 0)
-    return ((P[2] - rb[2]) *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by, bz - 1,
-                                        alpha, beta, m + 1) +
-            (bz - 1) / 2.0 / beta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by, bz - 2,
-                                        alpha, beta, m) -
-            (bz - 1) / 2.0 / beta * alpha / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az, bx, by, bz - 2,
-                                        alpha, beta, m + 1) +
-            az / 2.0 / zeta *
-            electron_repulsive_integral(ra, rb, ax, ay, az - 1, bx, by, bz - 1,
-                                        alpha, beta, m + 1));
+      return (P[i] - B.center[i]) *
+             electron_repulsive_integral(A, reduced_B, C, D, intermediate, m)
+             + (W[i] - P[i]) *
+               electron_repulsive_integral(A, reduced_B, C, D, intermediate,
+                                           m + 1)
 
-    //Set the starting point
-  else
-    return 2.0 * pow(M_PI, 2.5) / alpha / beta / sqrt(zeta) * Boys(xi * AB, m);
-}
+             + 0.5 / zeta * reduced_B.angular[i] * (
+          electron_repulsive_integral(A, double_reduced_B, C, D, intermediate,
+                                      m)
+          - rho / zeta *
+            electron_repulsive_integral(A, double_reduced_B, C, D, intermediate,
+                                        m + 1)
+      ) + 0.5 / zeta * A.angular[i] * (
+          electron_repulsive_integral(reduced_A, reduced_B, C, D, intermediate,
+                                      m)
+          - rho / zeta *
+            electron_repulsive_integral(reduced_A, reduced_B, C, D,
+                                        intermediate, m + 1)
+      ) + 0.5 / chi * C.angular[i] *
+          electron_repulsive_integral(A, reduced_B, reduced_C, D, intermediate,
+                                      m + 1)
 
-double
-electron_repulsive_integral(const GaussianFunctionPair & pair_1,
-                            const GaussianFunctionPair & pair_2) {
+             + 0.5 / chi * D.angular[i] *
+               electron_repulsive_integral(A, reduced_B, C, reduced_D,
+                                           intermediate,
+                                           m + 1);
+    }
 
-  const std::vector<GaussianFunction> AB_pair = expand_function_pair(pair_1);
-  const std::vector<GaussianFunction> CD_pair = expand_function_pair(pair_2);
+    if (C.angular[i] > 0) {
+      auto double_reduced_C = reduced_C;
+      double_reduced_C.angular[i]--;
 
-  double result = 0;
+      return (Q[i] - C.center[i]) *
+             electron_repulsive_integral(A, B, reduced_C, D, intermediate, m)
+             + (W[i] - Q[i]) *
+               electron_repulsive_integral(A, B, reduced_C, D, intermediate,
+                                           m + 1)
 
-  for (const auto & AB_func: AB_pair) {
-    for (const auto & CD_func: CD_pair) {
-      result += electron_repulsive_integral(AB_func.center.memptr(),
-                                            CD_func.center.memptr(),
-                                            AB_func.angular[0],
-                                            AB_func.angular[1],
-                                            AB_func.angular[2],
-                                            CD_func.angular[0],
-                                            CD_func.angular[1],
-                                            CD_func.angular[2],
-                                            AB_func.exponent, CD_func.exponent,
-                                            0)
-                * AB_func.coef * CD_func.coef;
+             + 0.5 / eta * reduced_C.angular[i] * (
+          electron_repulsive_integral(A, B, double_reduced_C, D, intermediate,
+                                      m)
+          - rho / eta *
+            electron_repulsive_integral(A, B, double_reduced_C, D, intermediate,
+                                        m + 1)
+      ) + 0.5 / eta * D.angular[i] * (
+          electron_repulsive_integral(A, B, reduced_C, reduced_D, intermediate,
+                                      m)
+          - rho / eta *
+            electron_repulsive_integral(A, B, reduced_C, reduced_D,
+                                        intermediate, m + 1)
+      ) + 0.5 / chi * A.angular[i] *
+          electron_repulsive_integral(reduced_A, B, reduced_C, D, intermediate,
+                                      m + 1)
 
+             + 0.5 / chi * B.angular[i] *
+               electron_repulsive_integral(A, reduced_B, reduced_C, D,
+                                           intermediate,
+                                           m + 1);
+    }
+
+    if (D.angular[i] > 0) {
+      auto double_reduced_D = reduced_D;
+      double_reduced_D.angular[i]--;
+
+      return (Q[i] - D.center[i]) *
+             electron_repulsive_integral(A, B, C, reduced_D, intermediate, m)
+             + (W[i] - Q[i]) *
+               electron_repulsive_integral(A, B, C, reduced_D, intermediate,
+                                           m + 1)
+
+             + 0.5 / eta * reduced_D.angular[i] * (
+          electron_repulsive_integral(A, B, C, double_reduced_D, intermediate,
+                                      m)
+          - rho / eta *
+            electron_repulsive_integral(A, B, C, double_reduced_D, intermediate,
+                                        m + 1)
+      ) + 0.5 / eta * C.angular[i] * (
+          electron_repulsive_integral(A, B, reduced_C, reduced_D, intermediate,
+                                      m)
+          - rho / eta *
+            electron_repulsive_integral(A, B, reduced_C, reduced_D,
+                                        intermediate, m + 1)
+      ) + 0.5 / chi * A.angular[i] *
+          electron_repulsive_integral(reduced_A, B, C, reduced_D, intermediate,
+                                      m + 1)
+
+             + 0.5 / chi * B.angular[i] *
+               electron_repulsive_integral(A, reduced_B, C, reduced_D,
+                                           intermediate,
+                                           m + 1);
     }
   }
 
-  return result;
+  const arma::vec3 from_B_to_A = A.center - B.center;
+  const arma::vec3 from_D_to_C = C.center - D.center;
+  const arma::vec3 from_Q_to_P = P - Q;
+  const double AB_norm_squared = arma::sum(arma::square(from_B_to_A));
+  const double CD_norm_squared = arma::sum(arma::square(from_D_to_C));
+  const double PQ_norm_squared = arma::sum(arma::square(from_Q_to_P));
+  const double xi = A.exponent * B.exponent / (A.exponent + B.exponent);
+  const double xi_prime = C.exponent * D.exponent / (C.exponent + D.exponent);
+
+  assert((arma::any(A.angular == 0)
+          && arma::any(B.angular == 0)
+          && arma::any(C.angular == 0)
+          && arma::any(D.angular == 0)));
+  return 2.0 * std::pow(M_PI, 2.5) / (zeta * eta) / std::sqrt(zeta + eta)
+         * std::exp(-xi * AB_norm_squared) *
+         std::exp(-xi_prime * CD_norm_squared)
+         * Boys(rho * PQ_norm_squared, m);
 }
 
 double
@@ -445,13 +399,118 @@ electron_repulsive_integral(const GaussianFunction & A,
                             const GaussianFunction & B,
                             const GaussianFunction & C,
                             const GaussianFunction & D) {
-  return electron_repulsive_integral({A, B}, {C, D});
+  const double zeta = A.exponent + B.exponent;
+  const double eta = C.exponent + D.exponent;
+  const double chi = eta + zeta;
+  const double rho = zeta * eta / chi;
+  const arma::vec3 P = (A.exponent * A.center + B.exponent * B.center) /
+                       (A.exponent + B.exponent);
+  const arma::vec3 Q = (C.exponent * C.center + D.exponent * D.center) /
+                       (C.exponent + D.exponent);
+  const arma::vec3 W = (zeta * P + eta * Q) / (zeta + eta);
+
+  const auto intermediate = ERIIntermediate{zeta, eta, chi, rho, P, Q, W};
+  return electron_repulsive_integral(A, B, C, D, intermediate, 0)
+         * A.coef * B.coef * C.coef * D.coef;
 }
 
 double
 electron_repulsive_integral(const ERI & eri_info) {
   return electron_repulsive_integral(eri_info.A, eri_info.B, eri_info.C,
                                      eri_info.D);
+}
+
+arma::mat electron_repulsive_integral(const basis::Basis & basis) {
+
+  const auto n_ao = basis.n_functions();
+  const auto pair_size = n_ao * n_ao;
+
+  arma::mat eri(pair_size, pair_size);
+
+  /* omp command here is just an automatic parallelization parsing of for loops
+   * which has no technical significance. Forget it.
+   * Instead of iterating over n_ao for all (ijkl) indices,
+   * we can utilize the symmetry of [ij | kl],
+   * [ij|kl] = [ji|kl] = [ij|lk] = [kl|ij]
+   * These three "=" represent 2^3=8-fold symmetry.
+   * the symmetry [ij|kl] =[kl|ij] is slightly different from having symmetric matrix,
+   * as we will also be having symmetry for i <-> j and k <-> l which
+   * destroys it.
+   * To implement this symmetry we usually use shell-pairs that first generate
+   * lower-triangular (ij) as pair, and from this list of pairs we pick up
+   * (ij) - pair and (kl) - pair as arguments for the ERI, but in a
+   * lower-triangular manner. This will require some indexing that, well,
+   * not hard but slightly complicated to implement here.
+   * So only i<->j symmetry and k<->l symmetry implemented, 4-fold in total.
+   */
+#pragma omp parallel for collapse(4)
+  for (int i = 0; i < n_ao; i++) {
+    for (int j = 0; j <= i; j++) {
+      for (int k = 0; k < n_ao; k++) {
+        for (int l = 0; l <= k; l++) {
+          const auto & function_i = basis.functions[i];
+          const auto n_gto_from_i = function_i.coefficients.n_elem;
+          const auto & function_j = basis.functions[j];
+          const auto n_gto_from_j = function_j.coefficients.n_elem;
+          const auto & function_k = basis.functions[k];
+          const auto n_gto_from_k = function_k.coefficients.n_elem;
+          const auto & function_l = basis.functions[l];
+          const auto n_gto_from_l = function_l.coefficients.n_elem;
+
+
+          double value = 0;
+          for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+            for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+              for (arma::uword gto_k = 0; gto_k < n_gto_from_k; gto_k++) {
+                for (arma::uword gto_l = 0; gto_l < n_gto_from_l; gto_l++) {
+                  const GaussianFunction gto_function_i{function_i.center,
+                                                        function_i.angular,
+                                                        function_i.exponents(
+                                                            gto_i),
+                                                        function_i.coefficients(
+                                                            gto_i)};
+
+                  const GaussianFunction gto_function_j{function_j.center,
+                                                        function_j.angular,
+                                                        function_j.exponents(
+                                                            gto_j),
+                                                        function_j.coefficients(
+                                                            gto_j)};
+
+                  const GaussianFunction gto_function_k{function_k.center,
+                                                        function_k.angular,
+                                                        function_k.exponents(
+                                                            gto_k),
+                                                        function_k.coefficients(
+                                                            gto_k)};
+
+                  const GaussianFunction gto_function_l{function_l.center,
+                                                        function_l.angular,
+                                                        function_l.exponents(
+                                                            gto_l),
+                                                        function_l.coefficients(
+                                                            gto_l)};
+
+                  const ERI eri_info{gto_function_i, gto_function_j,
+                                     gto_function_k, gto_function_l};
+
+                  value += electron_repulsive_integral(eri_info);
+                }
+              }
+            }
+          }
+
+          eri(i + n_ao * j, k + n_ao * l) = value;
+          eri(j + n_ao * i, k + n_ao * l) = value;
+          eri(i + n_ao * j, l + n_ao * k) = value;
+          eri(j + n_ao * i, l + n_ao * k) = value;
+        }
+      }
+    }
+  }
+
+  return eri;
+
 }
 
 // The nuclear attraction integral

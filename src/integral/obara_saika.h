@@ -7,6 +7,8 @@
 
 namespace hfincpp::integral::obara_saika {
 
+double Boys(double x, int m);
+
 std::vector<GaussianFunction>
 expand_function_pair(const GaussianFunctionPair & pair);
 
@@ -30,6 +32,8 @@ double electron_repulsive_integral(const GaussianFunctionPair & pair_1,
                                    const GaussianFunctionPair & pair_2);
 
 double electron_repulsive_integral(const ERI & eri_info);
+
+arma::mat electron_repulsive_integral(const basis::Basis & basis);
 }
 
 
