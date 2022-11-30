@@ -7,14 +7,6 @@
 
 namespace hfincpp::integral::obara_saika {
 
-double Boys(double x, int m);
-
-std::vector<GaussianFunction>
-expand_function_pair(const GaussianFunctionPair & pair);
-
-std::vector<GaussianFunction>
-    expand_basis(const basis::Basis & basis);
-
 double overlap_integral(const GaussianFunction & A, const GaussianFunction & B);
 
 double overlap_integral(const GaussianFunctionPair & pair);
@@ -34,6 +26,11 @@ double electron_repulsive_integral(const GaussianFunctionPair & pair_1,
 double electron_repulsive_integral(const ERI & eri_info);
 
 arma::mat electron_repulsive_integral(const basis::Basis & basis);
+
+namespace gradient {
+arma::cube overlap_integral(const basis::Basis & basis);
+}
+
 }
 
 

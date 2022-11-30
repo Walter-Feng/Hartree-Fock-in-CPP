@@ -12,21 +12,6 @@ double Boys(double x, int m) {
            (boost::math::tgamma(0.5 + m) - boost::math::tgamma(0.5 + m, x));
 }
 
-double Binomials(int n, int k) {
-  int i;
-  double result = 1.0;
-  if (n == k) return 1;
-  if (k == 0) return 1;
-  if (k < n) return 0;
-  if (k < 0) return 0;
-  for (i = 1; i < k; i++)
-    result *= (double) n - i;
-  for (i = 1; i <= k; i++)
-    result = result / (double) i;
-
-  return result;
-}
-
 /*
  * The functions below are directly based on a thesis
  * May, Andrew James. Density fitting in explicitly correlated
@@ -118,10 +103,6 @@ overlap_integral(const GaussianFunction & A, const GaussianFunction & B) {
                           A.angular[0], A.angular[1], A.angular[2],
                           B.angular[0], B.angular[1], B.angular[2],
                           A.exponent, B.exponent) * A.coef * B.coef;
-}
-
-double overlap_integral(const GaussianFunctionPair & pair) {
-  return overlap_integral(pair.first, pair.second);
 }
 
 arma::mat overlap_integral(const basis::Basis & basis) {
@@ -667,5 +648,68 @@ nuclear_attraction_integral(double ra[3], double rb[3], double rz[3], int ax,
   else
     return 2 * M_PI / (alpha + beta) * exp(-alpha * beta / zeta * AB) *
            Boys((alpha + beta) * PC, m);
+}
+
+namespace gradient {
+arma::cube overlap_integral(const basis::Basis & basis) {
+
+  const arma::uword n_atoms = basis.n_atoms();
+
+  arma::cube overlap(basis.n_functions(),
+                     basis.n_functions(),
+                     n_atoms * 3,
+                     arma::fill::zeros);
+
+  const auto on_atoms = basis.on_atoms();
+  basis.atom_indices.print("atom_indices");
+  for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
+    const auto & on_atom = on_atoms[i_atom];
+    on_atom.print("on_atom");
+//#pragma omp parallel for collapse(2)
+    for (arma::uword i_function_index = 0;
+         i_function_index < on_atom.n_elem; i_function_index++) {
+      for (int j = 0; j < basis.n_functions(); j++) {
+        if(basis.atom_indices(j) == i_atom) {
+          continue;
+        }
+        const arma::uword i = on_atom(i_function_index);
+        const auto & function_i = basis.functions[i];
+        const auto n_gto_from_i = function_i.coefficients.n_elem;
+        const auto & function_j = basis.functions[j];
+        const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+        double value = 0;
+        for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+          for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+            for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+              const GaussianFunction gto_function_i{function_i.center,
+                                                    function_i.angular,
+                                                    function_i.exponents(gto_i),
+                                                    function_i.coefficients(
+                                                        gto_i)};
+
+              const GaussianFunction gto_function_j{function_j.center,
+                                                    function_j.angular,
+                                                    function_j.exponents(gto_j),
+                                                    function_j.coefficients(
+                                                        gto_j)};
+
+              const auto gradient_on_i = gto_function_i.gradient(xyz_index);
+
+              for (const auto & gto_k: gradient_on_i) {
+                value += obara_saika::overlap_integral(gto_k, gto_function_j);
+              }
+
+              overlap(i, j, i_atom * 3 + xyz_index) -= value;
+              overlap(j, i, i_atom * 3 + xyz_index) -= value;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return overlap;
+}
 }
 }

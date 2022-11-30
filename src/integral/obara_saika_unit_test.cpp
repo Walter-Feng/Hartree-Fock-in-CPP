@@ -21,7 +21,8 @@ TEST_CASE("Check Basis struct") {
     const arma::mat overlap = overlap_integral(basis);
     const arma::mat kinetic = kinetic_integral(basis);
     const arma::mat eri = electron_repulsive_integral(basis);
-
+    const arma::cube overlap_gradient = gradient::overlap_integral(basis);
+    overlap_gradient.print();
   }
 
 

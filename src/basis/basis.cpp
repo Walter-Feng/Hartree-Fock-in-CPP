@@ -28,6 +28,7 @@ Basis::Basis(const geometry::Atoms & atoms,
 
     Basis basis;
 
+    std::vector<arma::uword> atom_indices_in_std_vector;
     const int n_atoms = atoms.n_atoms();
     for (int i_atom = 0; i_atom < n_atoms; i_atom++) {
 
@@ -154,6 +155,7 @@ Basis::Basis(const geometry::Atoms & atoms,
 
               functions.push_back(function);
               function_labels.push_back(label);
+              atom_indices_in_std_vector.push_back(i_atom);
             }
           }
 
@@ -165,6 +167,7 @@ Basis::Basis(const geometry::Atoms & atoms,
 
     atomic_numbers = atoms.atomic_numbers;
     atom_symbols = atoms.symbols;
+    atom_indices = arma::uvec{atom_indices_in_std_vector};
 
   } else {
     throw Error("The basis is not found");
@@ -185,5 +188,16 @@ int Basis::n_functions() const {
   return functions.size();
 }
 
+arma::uvec Basis::on_atom(const arma::uword atom_index) const {
+  return arma::find(atom_indices == atom_index);
+}
+
+std::vector<arma::uvec> Basis::on_atoms() const {
+  std::vector<arma::uvec> result(n_atoms());
+for(int i=0; i<n_atoms(); i++) {
+    result[i] = on_atom(i);
+  }
+  return result;
+}
 }
 }
