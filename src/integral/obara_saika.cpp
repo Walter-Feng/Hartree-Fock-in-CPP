@@ -661,10 +661,8 @@ arma::cube overlap_integral(const basis::Basis & basis) {
                      arma::fill::zeros);
 
   const auto on_atoms = basis.on_atoms();
-  basis.atom_indices.print("atom_indices");
   for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
     const auto & on_atom = on_atoms[i_atom];
-    on_atom.print("on_atom");
 //#pragma omp parallel for collapse(2)
     for (arma::uword i_function_index = 0;
          i_function_index < on_atom.n_elem; i_function_index++) {
@@ -678,10 +676,10 @@ arma::cube overlap_integral(const basis::Basis & basis) {
         const auto & function_j = basis.functions[j];
         const auto n_gto_from_j = function_j.coefficients.n_elem;
 
-        double value = 0;
         for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
           for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
             for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+              double value = 0;
               const GaussianFunction gto_function_i{function_i.center,
                                                     function_i.angular,
                                                     function_i.exponents(gto_i),

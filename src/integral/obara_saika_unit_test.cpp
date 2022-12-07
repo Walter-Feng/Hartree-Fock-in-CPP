@@ -2,6 +2,8 @@
 
 #include "obara_saika.h"
 
+#include "gradient/numerical.h"
+
 using namespace hfincpp::integral::obara_saika;
 
 TEST_CASE("Check Basis struct") {
@@ -16,13 +18,31 @@ TEST_CASE("Check Basis struct") {
 
     atoms.symbols = {"H", "H"};
 
-    hfincpp::basis::Basis basis(atoms, "cc-pvdz");
+    const std::string basis_name = "6-31g";
+    hfincpp::basis::Basis basis(atoms, basis_name);
 
     const arma::mat overlap = overlap_integral(basis);
     const arma::mat kinetic = kinetic_integral(basis);
     const arma::mat eri = electron_repulsive_integral(basis);
     const arma::cube overlap_gradient = gradient::overlap_integral(basis);
-    overlap_gradient.print();
+
+    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
+    numerical_overlap_functor =
+        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
+      const hfincpp::basis::Basis basis(atoms, basis_name);
+
+      return overlap_integral(basis);
+    };
+
+    const auto numerical_overlap_gradient =
+        hfincpp::gradient::numerical(numerical_overlap_functor, atoms);
+
+    arma::cube numerical_in_cube(arma::size(overlap_gradient));
+    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
+      numerical_in_cube.slice(i) = numerical_overlap_gradient[i];
+    }
+
+    CHECK(arma::abs(overlap_gradient - numerical_in_cube).max() < 1e-8);
   }
 
 

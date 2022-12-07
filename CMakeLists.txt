@@ -53,6 +53,8 @@ add_library(libHFINCPP
         src/geometry/geometry.cpp
         src/geometry/resolve.cpp
 
+        src/gradient/numerical.cpp
+
         src/integral/integral.cpp
         src/integral/obara_saika.cpp
         src/integral/rys_quadrature.cpp

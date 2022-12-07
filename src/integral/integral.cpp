@@ -4,7 +4,8 @@ namespace hfincpp::integral {
 
 std::vector<GaussianFunction> GaussianFunction::gradient(const int xyz_index) const {
 
-  auto angular_change = arma::Col<int>::fixed<3>(arma::fill::zeros);
+  arma::Col<int>::fixed<3> angular_change =
+      arma::Col<int>::fixed<3>(arma::fill::zeros);
   angular_change(xyz_index) = 1;
 
   std::vector<GaussianFunction> result = {
