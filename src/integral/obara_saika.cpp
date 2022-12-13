@@ -663,7 +663,7 @@ arma::cube overlap_integral(const basis::Basis & basis) {
   const auto on_atoms = basis.on_atoms();
   for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
     const auto & on_atom = on_atoms[i_atom];
-//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     for (arma::uword i_function_index = 0;
          i_function_index < on_atom.n_elem; i_function_index++) {
       for (int j = 0; j < basis.n_functions(); j++) {

@@ -6,6 +6,8 @@ extern "C" {
 #include <rys_roots.h>
 }
 
+#include "util/armadillo.h"
+
 /* The equations behind all the codes here are from the paper
  * "Efficient Electronic Integrals and their Generalized Derivatives for
  * Object Oriented Implementations of Electronic Structure Calculations",
@@ -1053,6 +1055,96 @@ arma::mat electron_repulsive_integral(
 
   return eri;
 
+
+}
+
+arma::mat transpose_electron_repulsive_integral_i_with_j(const arma::mat & eri) {
+
+  const arma::uword pair_size = eri.n_cols;
+  const arma::uword n_ao = std::sqrt(pair_size);
+  arma::mat result(arma::size(eri));
+
+#pragma omp parallel for
+  for(arma::uword i=0; i<eri.n_cols; i++) {
+    result.col(i) = arma::vectorise(arma::reshape(eri.col(i), n_ao, n_ao).t());
+  }
+
+  return result;
+}
+
+arma::mat transpose_electron_repulsive_integral_k_with_l(const arma::mat & eri) {
+
+  const arma::uword pair_size = eri.n_cols;
+  const arma::uword n_ao = std::sqrt(pair_size);
+  arma::mat result(arma::size(eri));
+
+#pragma omp parallel for
+  for(arma::uword i=0; i<eri.n_cols; i++) {
+    result.row(i) = arma::vectorise(arma::reshape(eri.row(i), n_ao, n_ao).t());
+  }
+
+  return result;
+}
+
+arma::cube electron_repulsive_integral(const basis::Basis & basis) {
+  const arma::uword n_atoms = basis.n_atoms();
+
+  const auto n_ao = basis.n_functions();
+  const auto pair_size = n_ao * n_ao;
+
+  arma::cube eri(pair_size, pair_size, n_atoms * 3, arma::fill::zeros);
+
+  const arma::uvec range_of_n_ao =
+      arma::regspace<arma::uvec>(0, n_ao - 1);
+
+  const auto on_atoms = basis.on_atoms();
+
+  for(int xyz_index = 0; xyz_index<3; xyz_index++) {
+    arma::Mat<int>::fixed<3,4> gradient_operator_on_i =
+        arma::zeros<arma::Mat<int>>(3,4);
+
+    gradient_operator_on_i(xyz_index, 0) = 1;
+    const arma::mat gradient_on_i =
+        gradient::electron_repulsive_integral(basis,
+                                              gradient_operator_on_i);
+
+    const arma::mat gradient_on_j =
+        transpose_electron_repulsive_integral_i_with_j(gradient_on_i);
+
+    for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
+      const auto & on_atom = on_atoms[i_atom];
+
+      // for each column vector in ERI integral, (ij) is interpreted as a matrix
+      // where i represents rows and j represents columns.
+      // Remind that armadillo stores matrix as column-majored, so
+      // if picking up non-trivial elements w.r.t. i, i.e. selecting functions
+      // along i index that center on one particular atom,
+      // it will go (non_trivial_i_index + j_stride * all_possible_j_numbers).
+      // and all_possible_j_numbers will be a range(n_ao), if
+      // writing in a python style.
+      const arma::uvec nontrivial_i_index =
+          arma::vectorise(
+              util::arma::outer_sum(on_atom, arma::uvec(n_ao * range_of_n_ao)));
+
+      const arma::uvec nontrivial_j_index =
+          arma::vectorise(
+              util::arma::outer_sum(range_of_n_ao, arma::uvec(n_ao * on_atom)));
+
+      eri.slice(i_atom * 3 + xyz_index).rows(nontrivial_i_index) +=
+          gradient_on_i.rows(nontrivial_i_index);
+
+      eri.slice(i_atom * 3 + xyz_index).rows(nontrivial_j_index) +=
+          gradient_on_j.rows(nontrivial_j_index);
+
+      eri.slice(i_atom * 3 + xyz_index).cols(nontrivial_i_index) +=
+          gradient_on_i.cols(nontrivial_i_index);
+
+      eri.slice(i_atom * 3 + xyz_index).cols(nontrivial_j_index) +=
+          gradient_on_j.cols(nontrivial_j_index);
+    }
+  }
+
+  return eri;
 
 }
 }

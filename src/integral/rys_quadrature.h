@@ -95,6 +95,10 @@ double electron_repulsive_integral(
 arma::mat electron_repulsive_integral(
     const basis::Basis & basis,
     const arma::Mat<int>::fixed<3, 4> & derivative_operator);
+
+arma::mat transpose_electron_repulsive_integral_i_with_j(const arma::mat & eri);
+
+arma::cube electron_repulsive_integral(const basis::Basis & basis);
 }
 
 namespace nuclear_attraction {
