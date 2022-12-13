@@ -12,7 +12,7 @@ template<typename T>
                          const ::arma::Col<T> & row) {
   const ::arma::uword n_cols = row.n_elem;
   const ::arma::uword n_rows = col.n_elem;
-  return ::arma::repmat(col, 1, n_cols) + ::arma::repmat(row, n_rows, 1);
+  return ::arma::repmat(col, 1, n_cols) + ::arma::repmat(row.t(), n_rows, 1);
 }
 
 }
