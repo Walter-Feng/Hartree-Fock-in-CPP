@@ -1137,10 +1137,10 @@ arma::cube electron_repulsive_integral(const basis::Basis & basis) {
           gradient_on_j.rows(nontrivial_j_index);
 
       eri.slice(i_atom * 3 + xyz_index).cols(nontrivial_i_index) +=
-          gradient_on_i.cols(nontrivial_i_index);
+          gradient_on_i.rows(nontrivial_i_index).t();
 
       eri.slice(i_atom * 3 + xyz_index).cols(nontrivial_j_index) +=
-          gradient_on_j.cols(nontrivial_j_index);
+          gradient_on_j.rows(nontrivial_j_index).t();
     }
   }
 

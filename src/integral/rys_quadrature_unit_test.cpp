@@ -2,6 +2,8 @@
 
 #include "rys_quadrature.h"
 
+#include "gradient/numerical.h"
+
 using namespace hfincpp::integral::rys_quadrature;
 
 const auto numerical_gradient_functor = [](
@@ -293,7 +295,24 @@ TEST_CASE("Check Rys quadrature integral implementation") {
     const arma::cube gradient_atomic =
         gradient::electron_repulsive_integral(basis);
 
-    gradient_atomic.print();
+    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
+        numerical_eri_functor =
+        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
+          const hfincpp::basis::Basis basis(atoms, basis_name);
+
+          return electron_repulsive_integral(basis);
+        };
+
+    const auto numerical_eri_gradient =
+        hfincpp::gradient::numerical(numerical_eri_functor, atoms);
+
+    arma::cube numerical_in_cube(arma::size(gradient_atomic));
+    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
+      numerical_in_cube.slice(i) = numerical_eri_gradient[i];
+    }
+
+    CHECK(arma::abs(gradient_atomic - numerical_in_cube).max() < 1e-8);
+
   }
 
 }
