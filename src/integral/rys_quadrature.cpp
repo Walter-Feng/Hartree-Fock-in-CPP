@@ -1148,3 +1148,313 @@ arma::cube electron_repulsive_integral(const basis::Basis & basis) {
 
 }
 }
+
+namespace hfincpp::integral::rys_quadrature::gradient::nuclear_attraction {
+
+using IntegralInfo = rys_quadrature::nuclear_attraction::IntegralInfo;
+
+std::vector<IntegralInfo>
+parse_gradient_a(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_a--;
+  term_2.a++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.alpha;
+
+  if (info.a <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_a--;
+    term_1.polynomial = term_1.polynomial * (-info.a);
+    term_1.a--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient_b(const IntegralInfo & info) {
+
+  auto term_2 = info;
+  term_2.grad_b--;
+  term_2.b++;
+  term_2.polynomial = term_2.polynomial * 2.0 * term_2.beta;
+
+  if (info.b <= 0) {
+    return {term_2};
+  } else {
+    auto term_1 = info;
+    term_1.grad_b--;
+    term_1.polynomial = term_1.polynomial * (-info.b);
+    term_1.b--;
+
+    return {term_1, term_2};
+  }
+
+}
+
+std::vector<IntegralInfo>
+parse_gradient_c(const IntegralInfo & info) {
+
+  const RysPolynomial t_square{arma::vec{0., 1.}};
+
+  auto term_3 = info;
+  term_3.grad_c--;
+  term_3.polynomial = term_3.polynomial *
+                      (t_square * 2.0 * term_3.p * (term_3.P - term_3.C));
+
+  if(info.a > 0) {
+    auto term_1 = info;
+    term_1.grad_c--;
+    term_1.polynomial = term_1.polynomial * (t_square * term_1.a);
+    term_1.a--;
+
+    if(info.b > 0) {
+      auto term_2 = info;
+      term_2.grad_c--;
+      term_2.polynomial = term_2.polynomial * (t_square * term_2.b);
+      term_2.b--;
+
+      if(info.grad_c > 1) {
+        auto term_4 = info;
+        term_4.polynomial = term_4.polynomial *
+                            (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
+        term_4.grad_c -= 2;
+
+        return {term_1, term_2, term_3, term_4};
+      } else {
+        return {term_1, term_2, term_3};
+      }
+    } else {
+      if(info.grad_c > 1) {
+        auto term_4 = info;
+        term_4.polynomial = term_4.polynomial *
+                            (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
+        term_4.grad_c -= 2;
+
+        return {term_1, term_3, term_4};
+      } else {
+        return {term_1, term_3};
+      }
+    }
+  } else {
+    if(info.b > 0) {
+      auto term_2 = info;
+      term_2.grad_c--;
+      term_2.polynomial = term_2.polynomial * (t_square * term_2.b);
+      term_2.b--;
+
+      if(info.grad_c > 1) {
+        auto term_4 = info;
+        term_4.polynomial = term_4.polynomial *
+                            (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
+        term_4.grad_c -= 2;
+
+        return {term_2, term_3, term_4};
+      } else {
+        return {term_2, term_3};
+      }
+    } else {
+      if(info.grad_c > 1) {
+        auto term_4 = info;
+        term_4.polynomial = term_4.polynomial *
+                            (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
+        term_4.grad_c -= 2;
+
+        return {term_3, term_4};
+      } else {
+        return {term_3};
+      }
+    }
+  }
+
+
+
+}
+
+
+std::vector<IntegralInfo>
+parse_gradient(const std::vector<IntegralInfo> & info) {
+  std::vector<IntegralInfo> result{};
+
+  for (const auto & i_info: info) {
+
+    if (i_info.grad_c > 0) {
+      const auto after_gradient = parse_gradient_c(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else if (i_info.grad_a > 0) {
+      const auto after_gradient = parse_gradient_a(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else if (i_info.grad_b > 0) {
+      const auto after_gradient = parse_gradient_b(i_info);
+      const auto after_iteration = parse_gradient(after_gradient);
+      result.insert(result.end(), after_iteration.begin(),
+                    after_iteration.end());
+    } else {
+      result.push_back(i_info);
+    }
+  }
+
+  return result;
+}
+
+RysPolynomial
+reduce_to_rys_polynomial(const IntegralInfo & info) {
+
+  const auto reduced = vertical_recursion_relation(
+      horizontal_recursion_relation(parse_gradient({info})));
+
+  const int total_angular_momentum =
+      info.a + info.b + info.grad_a + info.grad_b + info.grad_c + 1;
+
+  RysPolynomial result = {arma::vec(total_angular_momentum, arma::fill::zeros)};
+
+  for (const auto & i_info: reduced) {
+    const arma::uword n_elem = i_info.polynomial.coef.n_elem;
+    result.coef(arma::span(0, n_elem - 1)) += i_info.polynomial.coef;
+  }
+
+  return result;
+}
+
+}
+
+namespace hfincpp::integral::rys_quadrature::gradient {
+double nuclear_attraction_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge,
+                                   const arma::Mat<int>::fixed<3,3> & derivative_operator) {
+  const double p = pair.first.exponent + pair.second.exponent;
+  const arma::vec3 P =
+      (pair.first.exponent * pair.first.center +
+       pair.second.exponent * pair.second.center) / p;
+  const arma::vec3 from_B_to_A = pair.first.center - pair.second.center;
+
+  const double exponential_prefactor_AB = std::exp(
+      -pair.first.exponent * pair.second.exponent / p *
+      arma::dot(from_B_to_A, from_B_to_A));
+
+  const double T = p * arma::sum(arma::square(P - core_center));
+
+  const nuclear_attraction::IntegralInfo I_x{{arma::vec{1.0}},
+                                             pair.first.angular[0],
+                                             pair.second.angular[0],
+                                             p, P[0],
+                                             pair.first.center[0],
+                                             pair.second.center[0],
+                                             core_center[0],
+                                             pair.first.exponent,
+                                             pair.second.exponent,
+                                             derivative_operator(0, 0),
+                                             derivative_operator(0, 1),
+                                             derivative_operator(0, 2)};
+
+  const nuclear_attraction::IntegralInfo I_y{{arma::vec{1.0}},
+                                             pair.first.angular[1],
+                                             pair.second.angular[1],
+                                             p, P[1],
+                                             pair.first.center[1],
+                                             pair.second.center[1],
+                                             core_center[1],
+                                             pair.first.exponent,
+                                             pair.second.exponent,
+                                             derivative_operator(1, 0),
+                                             derivative_operator(1, 1),
+                                             derivative_operator(1, 2)};
+
+
+  const double prefactor_for_nuclear_attraction_integral =
+      - charge * 2.0 * M_PI / p * exponential_prefactor_AB;
+
+  const nuclear_attraction::IntegralInfo I_z{
+      {arma::vec{prefactor_for_nuclear_attraction_integral}},
+      pair.first.angular[2],
+      pair.second.angular[2],
+      p, P[2],
+      pair.first.center[2],
+      pair.second.center[2],
+      core_center[2],
+      pair.first.exponent,
+      pair.second.exponent,
+      derivative_operator(2, 0),
+      derivative_operator(2, 1),
+      derivative_operator(2, 2)};
+
+  const RysPolynomial I_z_polynomial =
+      nuclear_attraction::reduce_to_rys_polynomial(I_z);
+  const RysPolynomial I_x_polynomial =
+      nuclear_attraction::reduce_to_rys_polynomial(I_x);
+  const RysPolynomial I_y_polynomial =
+      nuclear_attraction::reduce_to_rys_polynomial(I_y);
+
+  const RysPolynomial multiplied =
+      I_x_polynomial * I_y_polynomial * I_z_polynomial;
+  const int n_rys_roots = (multiplied.coef.n_elem + 1) / 2;
+
+  arma::vec u(n_rys_roots);
+  arma::vec w(n_rys_roots);
+
+  CINTrys_roots(n_rys_roots, T, u.memptr(), w.memptr());
+
+  const arma::vec t_squared = u / (u + 1.0);
+
+  double sum = 0;
+  for (int i = 0; i < n_rys_roots; i++) {
+    sum += multiplied(t_squared[i]) * w[i];
+  }
+
+  return sum * pair.first.coef * pair.second.coef;
+}
+
+arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                      const basis::Basis & basis,
+                                      const arma::Mat<int>::fixed<3,3> & derivative_operator) {
+  arma::mat nai(basis.n_functions(), basis.n_functions());
+
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = 0; j < basis.n_functions(); j++) {
+      const auto & function_i = basis.functions[i];
+      const auto n_gto_from_i = function_i.coefficients.n_elem;
+      const auto & function_j = basis.functions[j];
+      const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+      double value = 0;
+      for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+        for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+          const GaussianFunction gto_function_i{function_i.center,
+                                                function_i.angular,
+                                                function_i.exponents(gto_i),
+                                                function_i.coefficients(gto_i)};
+
+          const GaussianFunction gto_function_j{function_j.center,
+                                                function_j.angular,
+                                                function_j.exponents(gto_j),
+                                                function_j.coefficients(gto_j)};
+
+          for(int atom_k=0; atom_k < atoms.n_atoms(); atom_k++) {
+            const arma::vec3 center = atoms.xyz.col(atom_k);
+            const double charge = atoms.atomic_numbers(atom_k);
+
+            value += nuclear_attraction_integral({gto_function_i, gto_function_j},
+                                                 center,
+                                                 charge,
+                                                 derivative_operator);
+          }
+        }
+      }
+
+      nai(i, j) = value;
+
+    }
+  }
+
+  return nai;
+}
+}

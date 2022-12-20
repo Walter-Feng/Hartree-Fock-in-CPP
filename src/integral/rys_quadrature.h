@@ -99,6 +99,15 @@ arma::mat electron_repulsive_integral(
 arma::mat transpose_electron_repulsive_integral_i_with_j(const arma::mat & eri);
 
 arma::cube electron_repulsive_integral(const basis::Basis & basis);
+
+double nuclear_attraction_integral(const GaussianFunctionPair & pair,
+                                   const arma::vec3 & core_center,
+                                   double charge,
+                                   const arma::Mat<int>::fixed<3,3> & derivative_operator);
+
+arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                      const basis::Basis & basis,
+                                      const arma::Mat<int>::fixed<3,3> & derivative_operator);
 }
 
 namespace nuclear_attraction {

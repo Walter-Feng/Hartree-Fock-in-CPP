@@ -72,7 +72,7 @@ double electron_repulsive_integral_numerical_gradient(
                                                                 new_operator);
         };
 
-        double original;
+        double original = 0;
         switch (index) {
           case 0:
             original = info_copy.A.center(0);
@@ -111,7 +111,6 @@ double electron_repulsive_integral_numerical_gradient(
             original = info_copy.D.center(2);
             break;
           default:
-            original = 0;
             break;
         }
 
@@ -121,6 +120,107 @@ double electron_repulsive_integral_numerical_gradient(
   }
 
   return electron_repulsive_integral(info);
+}
+
+
+double nuclear_attraction_integral_numerical_gradient(
+    const hfincpp::integral::GaussianFunctionPair & pair,
+    const arma::vec3 & center,
+    const double charge,
+    const arma::Mat<int>::fixed<3, 3> & derivative_operator
+) {
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (derivative_operator(i, j) > 0) {
+        arma::Mat<int>::fixed<3, 3> new_operator = derivative_operator;
+        new_operator(i, j)--;
+        auto pair_copy = pair;
+        auto center_copy = center;
+        const auto index = i + j * 3;
+        const auto eri_functor =
+            [&pair_copy,
+             &center_copy,
+             index,
+             &new_operator,
+             charge](double coord_value) -> double {
+
+          switch (index) {
+            case 0:
+              pair_copy.first.center(0) = coord_value;
+              break;
+            case 1:
+              pair_copy.first.center(1) = coord_value;
+              break;
+            case 2:
+              pair_copy.first.center(2) = coord_value;
+              break;
+            case 3:
+              pair_copy.second.center(0) = coord_value;
+              break;
+            case 4:
+              pair_copy.second.center(1) = coord_value;
+              break;
+            case 5:
+              pair_copy.second.center(2) = coord_value;
+              break;
+            case 6:
+              center_copy(0) = coord_value;
+              break;
+            case 7:
+              center_copy(1) = coord_value;
+              break;
+            case 8:
+              center_copy(2) = coord_value;
+              break;
+            default:
+              break;
+          }
+
+          return nuclear_attraction_integral_numerical_gradient(pair_copy,
+                                                                center_copy,
+                                                                charge,
+                                                                new_operator);
+        };
+
+        double original = 0;
+        switch (index) {
+          case 0:
+            original = pair_copy.first.center(0);
+            break;
+          case 1:
+            original = pair_copy.first.center(1);
+            break;
+          case 2:
+            original = pair_copy.first.center(2);
+            break;
+          case 3:
+            original = pair_copy.second.center(0);
+            break;
+          case 4:
+            original = pair_copy.second.center(1);
+            break;
+          case 5:
+            original =pair_copy.second.center(2);
+            break;
+          case 6:
+            original = center_copy(0);
+            break;
+          case 7:
+            original = center_copy(1);
+            break;
+          case 8:
+            original = center_copy(2);
+            break;
+          default:
+            break;
+        }
+
+        return numerical_gradient_functor(eri_functor, original);
+      }
+    }
+  }
+
+  return nuclear_attraction_integral(pair, center, charge);
 }
 
 TEST_CASE("Check Rys quadrature integral implementation") {
@@ -256,63 +356,94 @@ TEST_CASE("Check Rys quadrature integral implementation") {
     CHECK(std::abs(diff) < 1e-10);
   }
 
-  SECTION("Check gradient for systems") {
-    hfincpp::geometry::Atoms atoms;
-    atoms.atomic_numbers = {1, 9};
-    atoms.xyz = {
-        {0, 3.77945},
-        {0, 0},
-        {0, 0}
+  SECTION("Gradient of NAI") {
+    hfincpp::integral::GaussianFunction A;
+    A.center = {0.0, 0.0, 0.0};
+    A.angular = {0, 1, 1};
+    A.exponent = 1.0;
+    A.coef = 1.0;
+
+    hfincpp::integral::GaussianFunction B;
+    B.center = {0.5, 0.6, 0.7};
+    B.angular = {1, 2, 0};
+    B.exponent = 2.0;
+    B.coef = 1.0;
+
+    const arma::vec3 core_center = {0.25, 0.25, 0.25};
+
+    arma::Mat<int>::fixed<3, 3> derivative_operator = {
+        {1, 0, 0},
+        {1, 0, 0},
+        {1, 0, 0}
     };
 
-    atoms.symbols = {"H", "F"};
+    std::cout << "analytical: " << gradient::nuclear_attraction_integral({A,B}, core_center, 1, derivative_operator)
+    << " numerical: " << nuclear_attraction_integral_numerical_gradient({A,B}, core_center, 1, derivative_operator) << std::endl;
+    double diff =
+        gradient::nuclear_attraction_integral({A,B}, core_center, 1, derivative_operator) -
+        nuclear_attraction_integral_numerical_gradient({A,B}, core_center, 1, derivative_operator);
 
-    const std::string basis_name = "6-31g";
-    hfincpp::basis::Basis basis(atoms, basis_name);
-
-    arma::Mat<int>::fixed<3, 4> gradient_operator_on_i = {
-        {1, 0, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}
-    };
-
-    arma::Mat<int>::fixed<3, 4> gradient_operator_on_j = {
-        {0, 1, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}
-    };
-
-    const arma::mat gradient_on_i =
-        gradient::electron_repulsive_integral(basis, gradient_operator_on_i);
-
-    const arma::mat gradient_on_j =
-        gradient::electron_repulsive_integral(basis, gradient_operator_on_j);
-
-    CHECK(arma::abs(gradient_on_j
-    - gradient::transpose_electron_repulsive_integral_i_with_j(gradient_on_i))
-      .max() < 1e-8);
-
-    const arma::cube gradient_atomic =
-        gradient::electron_repulsive_integral(basis);
-
-    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
-        numerical_eri_functor =
-        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
-          const hfincpp::basis::Basis basis(atoms, basis_name);
-
-          return electron_repulsive_integral(basis);
-        };
-
-    const auto numerical_eri_gradient =
-        hfincpp::gradient::numerical(numerical_eri_functor, atoms);
-
-    arma::cube numerical_in_cube(arma::size(gradient_atomic));
-    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
-      numerical_in_cube.slice(i) = numerical_eri_gradient[i];
-    }
-
-    CHECK(arma::abs(gradient_atomic - numerical_in_cube).max() < 1e-8);
-
+    CHECK(std::abs(diff) < 1e-9);
   }
+
+//
+//  SECTION("Check gradient of ERI in actual systems") {
+//    hfincpp::geometry::Atoms atoms;
+//    atoms.atomic_numbers = {1, 9};
+//    atoms.xyz = {
+//        {0, 3.77945},
+//        {0, 0},
+//        {0, 0}
+//    };
+//
+//    atoms.symbols = {"H", "F"};
+//
+//    const std::string basis_name = "6-31g";
+//    hfincpp::basis::Basis basis(atoms, basis_name);
+//
+//    arma::Mat<int>::fixed<3, 4> gradient_operator_on_i = {
+//        {1, 0, 0, 0},
+//        {0, 0, 0, 0},
+//        {0, 0, 0, 0}
+//    };
+//
+//    arma::Mat<int>::fixed<3, 4> gradient_operator_on_j = {
+//        {0, 1, 0, 0},
+//        {0, 0, 0, 0},
+//        {0, 0, 0, 0}
+//    };
+//
+//    const arma::mat gradient_on_i =
+//        gradient::electron_repulsive_integral(basis, gradient_operator_on_i);
+//
+//    const arma::mat gradient_on_j =
+//        gradient::electron_repulsive_integral(basis, gradient_operator_on_j);
+//
+//    CHECK(arma::abs(gradient_on_j
+//    - gradient::transpose_electron_repulsive_integral_i_with_j(gradient_on_i))
+//      .max() < 1e-8);
+//
+//    const arma::cube gradient_atomic =
+//        gradient::electron_repulsive_integral(basis);
+//
+//    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
+//        numerical_eri_functor =
+//        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
+//          const hfincpp::basis::Basis basis(atoms, basis_name);
+//
+//          return electron_repulsive_integral(basis);
+//        };
+//
+//    const auto numerical_eri_gradient =
+//        hfincpp::gradient::numerical(numerical_eri_functor, atoms);
+//
+//    arma::cube numerical_in_cube(arma::size(gradient_atomic));
+//    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
+//      numerical_in_cube.slice(i) = numerical_eri_gradient[i];
+//    }
+//
+//    CHECK(arma::abs(gradient_atomic - numerical_in_cube).max() < 1e-8);
+//
+//  }
 
 }
