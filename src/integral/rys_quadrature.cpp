@@ -645,7 +645,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
 
 
   const double prefactor_for_nuclear_attraction_integral =
-      - charge * 2.0 * M_PI / p * exponential_prefactor_AB;
+      -charge * 2.0 * M_PI / p * exponential_prefactor_AB;
 
   const nuclear_attraction::IntegralInfo I_z{
       {arma::vec{prefactor_for_nuclear_attraction_integral}},
@@ -706,13 +706,14 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
                                                 function_j.exponents(gto_j),
                                                 function_j.coefficients(gto_j)};
 
-          for(int atom_k=0; atom_k < atoms.n_atoms(); atom_k++) {
+          for (int atom_k = 0; atom_k < atoms.n_atoms(); atom_k++) {
             const arma::vec3 center = atoms.xyz.col(atom_k);
             const double charge = atoms.atomic_numbers(atom_k);
 
-            value += nuclear_attraction_integral({gto_function_i, gto_function_j},
-                                                 center,
-                                                 charge);
+            value += nuclear_attraction_integral(
+                {gto_function_i, gto_function_j},
+                center,
+                charge);
           }
         }
       }
@@ -1041,7 +1042,8 @@ arma::mat electron_repulsive_integral(
                   const ERI eri_info{gto_function_i, gto_function_j,
                                      gto_function_k, gto_function_l};
 
-                  value += electron_repulsive_integral(eri_info, derivative_operator);
+                  value += electron_repulsive_integral(eri_info,
+                                                       derivative_operator);
                 }
               }
             }
@@ -1058,28 +1060,30 @@ arma::mat electron_repulsive_integral(
 
 }
 
-arma::mat transpose_electron_repulsive_integral_i_with_j(const arma::mat & eri) {
+arma::mat
+transpose_electron_repulsive_integral_i_with_j(const arma::mat & eri) {
 
   const arma::uword pair_size = eri.n_cols;
   const arma::uword n_ao = std::sqrt(pair_size);
   arma::mat result(arma::size(eri));
 
 #pragma omp parallel for
-  for(arma::uword i=0; i<eri.n_cols; i++) {
+  for (arma::uword i = 0; i < eri.n_cols; i++) {
     result.col(i) = arma::vectorise(arma::reshape(eri.col(i), n_ao, n_ao).t());
   }
 
   return result;
 }
 
-arma::mat transpose_electron_repulsive_integral_k_with_l(const arma::mat & eri) {
+arma::mat
+transpose_electron_repulsive_integral_k_with_l(const arma::mat & eri) {
 
   const arma::uword pair_size = eri.n_cols;
   const arma::uword n_ao = std::sqrt(pair_size);
   arma::mat result(arma::size(eri));
 
 #pragma omp parallel for
-  for(arma::uword i=0; i<eri.n_cols; i++) {
+  for (arma::uword i = 0; i < eri.n_cols; i++) {
     result.row(i) = arma::vectorise(arma::reshape(eri.row(i), n_ao, n_ao).t());
   }
 
@@ -1099,9 +1103,9 @@ arma::cube electron_repulsive_integral(const basis::Basis & basis) {
 
   const auto on_atoms = basis.on_atoms();
 
-  for(int xyz_index = 0; xyz_index<3; xyz_index++) {
-    arma::Mat<int>::fixed<3,4> gradient_operator_on_i =
-        arma::zeros<arma::Mat<int>>(3,4);
+  for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+    arma::Mat<int>::fixed<3, 4> gradient_operator_on_i =
+        arma::zeros<arma::Mat<int>>(3, 4);
 
     gradient_operator_on_i(xyz_index, 0) = 1;
     const arma::mat gradient_on_i =
@@ -1205,19 +1209,19 @@ parse_gradient_c(const IntegralInfo & info) {
   term_3.polynomial = term_3.polynomial *
                       (t_square * 2.0 * term_3.p * (term_3.P - term_3.C));
 
-  if(info.a > 0) {
+  if (info.a > 0) {
     auto term_1 = info;
     term_1.grad_c--;
     term_1.polynomial = term_1.polynomial * (t_square * term_1.a);
     term_1.a--;
 
-    if(info.b > 0) {
+    if (info.b > 0) {
       auto term_2 = info;
       term_2.grad_c--;
       term_2.polynomial = term_2.polynomial * (t_square * term_2.b);
       term_2.b--;
 
-      if(info.grad_c > 1) {
+      if (info.grad_c > 1) {
         auto term_4 = info;
         term_4.polynomial = term_4.polynomial *
                             (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
@@ -1228,7 +1232,7 @@ parse_gradient_c(const IntegralInfo & info) {
         return {term_1, term_2, term_3};
       }
     } else {
-      if(info.grad_c > 1) {
+      if (info.grad_c > 1) {
         auto term_4 = info;
         term_4.polynomial = term_4.polynomial *
                             (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
@@ -1240,13 +1244,13 @@ parse_gradient_c(const IntegralInfo & info) {
       }
     }
   } else {
-    if(info.b > 0) {
+    if (info.b > 0) {
       auto term_2 = info;
       term_2.grad_c--;
       term_2.polynomial = term_2.polynomial * (t_square * term_2.b);
       term_2.b--;
 
-      if(info.grad_c > 1) {
+      if (info.grad_c > 1) {
         auto term_4 = info;
         term_4.polynomial = term_4.polynomial *
                             (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
@@ -1257,7 +1261,7 @@ parse_gradient_c(const IntegralInfo & info) {
         return {term_2, term_3};
       }
     } else {
-      if(info.grad_c > 1) {
+      if (info.grad_c > 1) {
         auto term_4 = info;
         term_4.polynomial = term_4.polynomial *
                             (t_square * 2.0 * term_4.p * (1 - term_4.grad_c));
@@ -1269,7 +1273,6 @@ parse_gradient_c(const IntegralInfo & info) {
       }
     }
   }
-
 
 
 }
@@ -1329,7 +1332,7 @@ namespace hfincpp::integral::rys_quadrature::gradient {
 double nuclear_attraction_integral(const GaussianFunctionPair & pair,
                                    const arma::vec3 & core_center,
                                    double charge,
-                                   const arma::Mat<int>::fixed<3,3> & derivative_operator) {
+                                   const arma::Mat<int>::fixed<3, 3> & derivative_operator) {
   const double p = pair.first.exponent + pair.second.exponent;
   const arma::vec3 P =
       (pair.first.exponent * pair.first.center +
@@ -1370,7 +1373,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
 
 
   const double prefactor_for_nuclear_attraction_integral =
-      - charge * 2.0 * M_PI / p * exponential_prefactor_AB;
+      -charge * 2.0 * M_PI / p * exponential_prefactor_AB;
 
   const nuclear_attraction::IntegralInfo I_z{
       {arma::vec{prefactor_for_nuclear_attraction_integral}},
@@ -1412,10 +1415,13 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
   return sum * pair.first.coef * pair.second.coef;
 }
 
-arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
-                                      const basis::Basis & basis,
-                                      const arma::Mat<int>::fixed<3,3> & derivative_operator) {
+arma::mat nuclear_attraction_integral_on_orbital(
+    const geometry::Atoms & atoms,
+    const basis::Basis & basis,
+    const arma::Mat<int>::fixed<3, 3> & derivative_operator) {
   arma::mat nai(basis.n_functions(), basis.n_functions());
+
+  assert(arma::all(derivative_operator.col(2) == 0));
 
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < basis.n_functions(); i++) {
@@ -1438,14 +1444,15 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
                                                 function_j.exponents(gto_j),
                                                 function_j.coefficients(gto_j)};
 
-          for(int atom_k=0; atom_k < atoms.n_atoms(); atom_k++) {
+          for (int atom_k = 0; atom_k < atoms.n_atoms(); atom_k++) {
             const arma::vec3 center = atoms.xyz.col(atom_k);
             const double charge = atoms.atomic_numbers(atom_k);
 
-            value += nuclear_attraction_integral({gto_function_i, gto_function_j},
-                                                 center,
-                                                 charge,
-                                                 derivative_operator);
+            value += nuclear_attraction_integral(
+                {gto_function_i, gto_function_j},
+                center,
+                charge,
+                derivative_operator);
           }
         }
       }
@@ -1456,5 +1463,105 @@ arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
   }
 
   return nai;
+}
+
+
+arma::cube nuclear_attraction_integral_on_core(
+    const geometry::Atoms & atoms,
+    const basis::Basis & basis,
+    const arma::Mat<int>::fixed<3, 3> & derivative_operator) {
+
+  arma::cube nai(basis.n_functions(), basis.n_functions(), atoms.n_atoms());
+
+  assert(arma::all(derivative_operator.col(0) == 0));
+  assert(arma::all(derivative_operator.col(1) == 0));
+
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < basis.n_functions(); i++) {
+    for (int j = i; j < basis.n_functions(); j++) {
+      const auto & function_i = basis.functions[i];
+      const auto n_gto_from_i = function_i.coefficients.n_elem;
+      const auto & function_j = basis.functions[j];
+      const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+
+      for (int atom_k = 0; atom_k < atoms.n_atoms(); atom_k++) {
+        const arma::vec3 center = atoms.xyz.col(atom_k);
+        const double charge = atoms.atomic_numbers(atom_k);
+        double value = 0;
+        for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+          for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+            const GaussianFunction gto_function_i{function_i.center,
+                                                  function_i.angular,
+                                                  function_i.exponents(gto_i),
+                                                  function_i.coefficients(
+                                                      gto_i)};
+
+            const GaussianFunction gto_function_j{function_j.center,
+                                                  function_j.angular,
+                                                  function_j.exponents(gto_j),
+                                                  function_j.coefficients(
+                                                      gto_j)};
+
+
+            value += nuclear_attraction_integral(
+                {gto_function_i, gto_function_j},
+                center,
+                charge,
+                derivative_operator);
+          }
+        }
+        nai(i, j, atom_k) = value;
+        nai(j, i, atom_k) = value;
+      }
+    }
+  }
+
+  return nai;
+}
+
+arma::cube nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                       const basis::Basis & basis) {
+  const arma::uword n_atoms = basis.n_atoms();
+
+  arma::cube nai(basis.n_functions(),
+                 basis.n_functions(),
+                 n_atoms * 3,
+                 arma::fill::zeros);
+
+  const auto on_atoms = basis.on_atoms();
+
+  for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+
+    arma::Mat<int>::fixed<3, 3> gradient_operator_on_A(arma::fill::zeros);
+    arma::Mat<int>::fixed<3, 3> gradient_operator_on_C(arma::fill::zeros);
+
+    gradient_operator_on_A(xyz_index, 0) = 1;
+    gradient_operator_on_C(xyz_index, 2) = 1;
+
+    const arma::mat gradient_on_A =
+        nuclear_attraction_integral_on_orbital(atoms, basis,
+                                               gradient_operator_on_A);
+
+    const arma::cube gradient_on_C =
+        nuclear_attraction_integral_on_core(atoms, basis,
+                                            gradient_operator_on_C);
+
+    for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
+      const auto & on_atom = on_atoms[i_atom];
+
+      nai.slice(i_atom * 3 + xyz_index).cols(on_atom) +=
+          gradient_on_A.rows(on_atom).t();
+
+      nai.slice(i_atom * 3 + xyz_index).rows(on_atom) +=
+          gradient_on_A.rows(on_atom);
+
+      nai.slice(i_atom * 3 + xyz_index) += gradient_on_C.slice(i_atom);
+
+    }
+  }
+
+  return nai;
+
 }
 }

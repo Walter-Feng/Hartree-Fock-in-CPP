@@ -445,4 +445,43 @@ TEST_CASE("Check Rys quadrature integral implementation") {
 
   }
 
+
+  SECTION("Check gradient of NAI in actual systems") {
+    hfincpp::geometry::Atoms atoms;
+    atoms.atomic_numbers = {1, 9};
+    atoms.xyz = {
+        {0, 3.77945},
+        {0, 0},
+        {0, 0}
+    };
+
+    atoms.symbols = {"H", "F"};
+
+    const std::string basis_name = "6-31g";
+    hfincpp::basis::Basis basis(atoms, basis_name);
+
+    const arma::cube gradient_atomic =
+        gradient::nuclear_attraction_integral(atoms, basis);
+
+    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
+        numerical_nai_functor =
+        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
+          const hfincpp::basis::Basis basis(atoms, basis_name);
+
+          return nuclear_attraction_integral(atoms, basis);
+        };
+
+    const auto numerical_nai_gradient =
+        hfincpp::gradient::numerical(numerical_nai_functor, atoms);
+
+    arma::cube numerical_in_cube(arma::size(gradient_atomic));
+    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
+      numerical_in_cube.slice(i) = numerical_nai_gradient[i];
+    }
+
+    CHECK(arma::abs(gradient_atomic - numerical_in_cube).max() < 1e-8);
+
+
+  }
+
 }

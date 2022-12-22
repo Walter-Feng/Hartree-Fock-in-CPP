@@ -105,9 +105,8 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
                                    double charge,
                                    const arma::Mat<int>::fixed<3,3> & derivative_operator);
 
-arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
-                                      const basis::Basis & basis,
-                                      const arma::Mat<int>::fixed<3,3> & derivative_operator);
+arma::cube nuclear_attraction_integral(const geometry::Atoms & atoms,
+                                       const basis::Basis & basis);
 }
 
 namespace nuclear_attraction {
