@@ -709,5 +709,67 @@ arma::cube overlap_integral(const basis::Basis & basis) {
 
   return overlap;
 }
+
+arma::cube kinetic_integral(const basis::Basis & basis) {
+
+  const arma::uword n_atoms = basis.n_atoms();
+
+  arma::cube kinetic(basis.n_functions(),
+                     basis.n_functions(),
+                     n_atoms * 3,
+                     arma::fill::zeros);
+
+  const auto on_atoms = basis.on_atoms();
+  for (arma::uword i_atom = 0; i_atom < n_atoms; i_atom++) {
+    const auto & on_atom = on_atoms[i_atom];
+#pragma omp parallel for collapse(2)
+    for (arma::uword i_function_index = 0;
+         i_function_index < on_atom.n_elem; i_function_index++) {
+      for (int j = 0; j < basis.n_functions(); j++) {
+        if(basis.atom_indices(j) == i_atom) {
+          continue;
+        }
+        const arma::uword i = on_atom(i_function_index);
+        const auto & function_i = basis.functions[i];
+        const auto n_gto_from_i = function_i.coefficients.n_elem;
+        const auto & function_j = basis.functions[j];
+        const auto n_gto_from_j = function_j.coefficients.n_elem;
+
+        for (arma::uword gto_i = 0; gto_i < n_gto_from_i; gto_i++) {
+          for (arma::uword gto_j = 0; gto_j < n_gto_from_j; gto_j++) {
+            for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+              double value = 0;
+              const GaussianFunction gto_function_i{function_i.center,
+                                                    function_i.angular,
+                                                    function_i.exponents(gto_i),
+                                                    function_i.coefficients(
+                                                        gto_i)};
+
+              const GaussianFunction gto_function_j{function_j.center,
+                                                    function_j.angular,
+                                                    function_j.exponents(gto_j),
+                                                    function_j.coefficients(
+                                                        gto_j)};
+
+              const auto laplace_operator_on_j = gto_function_j.laplace();
+              const auto gradient_on_i = gto_function_i.gradient(xyz_index);
+
+              for (const auto & gto_k: gradient_on_i) {
+                for(const auto & laplace_gto_j: laplace_operator_on_j) {
+                  value += obara_saika::overlap_integral(gto_k, laplace_gto_j);
+                }
+              }
+
+              kinetic(i, j, i_atom * 3 + xyz_index) += value / 2.0;
+              kinetic(j, i, i_atom * 3 + xyz_index) += value / 2.0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return kinetic;
+}
 }
 }

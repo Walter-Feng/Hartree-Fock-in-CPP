@@ -29,6 +29,8 @@ arma::mat electron_repulsive_integral(const basis::Basis & basis);
 
 namespace gradient {
 arma::cube overlap_integral(const basis::Basis & basis);
+
+arma::cube kinetic_integral(const basis::Basis & basis);
 }
 
 }

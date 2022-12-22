@@ -6,24 +6,21 @@
 
 using namespace hfincpp::integral::obara_saika;
 
-TEST_CASE("Check Basis struct") {
-  SECTION("check file parse") {
+TEST_CASE("Check Obara-Saika implementation") {
+  SECTION("check overlap gradient") {
     hfincpp::geometry::Atoms atoms;
-    atoms.atomic_numbers = {1, 1};
+    atoms.atomic_numbers = {1, 9};
     atoms.xyz = {
         {0, 3.77945},
         {0, 0},
         {0, 0}
     };
 
-    atoms.symbols = {"H", "H"};
+    atoms.symbols = {"H", "F"};
 
     const std::string basis_name = "6-31g";
     hfincpp::basis::Basis basis(atoms, basis_name);
 
-    const arma::mat overlap = overlap_integral(basis);
-    const arma::mat kinetic = kinetic_integral(basis);
-    const arma::mat eri = electron_repulsive_integral(basis);
     const arma::cube overlap_gradient = gradient::overlap_integral(basis);
 
     const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
@@ -43,6 +40,43 @@ TEST_CASE("Check Basis struct") {
     }
 
     CHECK(arma::abs(overlap_gradient - numerical_in_cube).max() < 1e-8);
+  }
+
+  SECTION("check kinetic integral gradient") {
+    hfincpp::geometry::Atoms atoms;
+    atoms.atomic_numbers = {1, 9};
+    atoms.xyz = {
+        {0, 3.77945},
+        {0, 0},
+        {0, 0}
+    };
+
+    atoms.symbols = {"H", "F"};
+
+    const std::string basis_name = "6-31g";
+    hfincpp::basis::Basis basis(atoms, basis_name);
+
+    const arma::cube kinetic_gradient = gradient::kinetic_integral(basis);
+
+    const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
+        numerical_kinetic_functor =
+        [basis_name](const hfincpp::geometry::Atoms & atoms) -> arma::mat {
+          const hfincpp::basis::Basis basis(atoms, basis_name);
+
+          return kinetic_integral(basis);
+        };
+
+    const auto numerical_kinetic_gradient =
+        hfincpp::gradient::numerical(numerical_kinetic_functor, atoms);
+
+    arma::cube numerical_in_cube(arma::size(kinetic_gradient));
+    for(arma::uword i=0; i<numerical_in_cube.n_slices; i++) {
+      numerical_in_cube.slice(i) = numerical_kinetic_gradient[i];
+    }
+
+    kinetic_gradient.print("analytical");
+    numerical_in_cube.print("numerical");
+    CHECK(arma::abs(kinetic_gradient - numerical_in_cube).max() < 1e-8);
   }
 
 
