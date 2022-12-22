@@ -150,8 +150,11 @@ Basis::Basis(const geometry::Atoms & atoms,
               label += ay_string;
               label += az_string;
 
-              const GTOFunction function{center, angular, exponents,
-                                         coefficients % normalization_constant};
+              const arma::uvec non_zero_coefficients = arma::find(coefficients);
+              const GTOFunction function{center, angular,
+                                         exponents(non_zero_coefficients),
+                                         coefficients(non_zero_coefficients)
+                                         % normalization_constant(non_zero_coefficients)};
 
               functions.push_back(function);
               function_labels.push_back(label);
@@ -198,6 +201,30 @@ for(int i=0; i<n_atoms(); i++) {
     result[i] = on_atom(i);
   }
   return result;
+}
+
+Basis Basis::sort_by_angular_momentum() const {
+  const auto n_functions = functions.size();
+  arma::uvec angular_momentum(n_functions);
+  for(size_t i=0; i<n_functions; i++) {
+    angular_momentum(i) = arma::sum(functions[i].angular);
+  }
+
+  Basis new_basis;
+  std::vector<GTOFunction> new_function_basis(n_functions);
+  std::vector<std::string> new_function_labels(n_functions);
+
+  for(arma::uword l=0; l<=arma::max(angular_momentum); l++) {
+    const arma::uvec find = arma::find(angular_momentum == l);
+    assert(find.is_sorted());
+    for(arma::uword i=0; i<find.n_elem; i++) {
+      new_basis.functions.push_back(functions[find(i)]);
+      new_basis.function_labels.push_back(function_labels[find(i)]);
+    }
+  }
+  new_basis.atomic_numbers = atomic_numbers;
+  new_basis.atom_symbols = atom_symbols;
+  return new_basis;
 }
 }
 }

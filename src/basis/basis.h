@@ -36,6 +36,7 @@ struct Basis {
 
   [[nodiscard]] arma::uvec on_atom(const arma::uword atom_index) const;
   std::vector<arma::uvec> on_atoms() const;
+  Basis sort_by_angular_momentum() const;
 };
 }
 }

@@ -543,7 +543,7 @@ IntegralInfo::vertical_recursion_relation() const {
     term_1.a--;
     auto term_2 = *this;
     const RysPolynomial R_2 = {arma::vec{0.5 / term_1.p, -0.5 / term_1.p}};
-    term_2.polynomial = term_2.polynomial * R_2;
+    term_2.polynomial = term_2.polynomial * R_2 * (term_2.a - 1);
     term_2.a -= 2;
     return {term_1, term_2};
   }
@@ -623,7 +623,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
 
   const double T = p * arma::sum(arma::square(P - core_center));
 
-  const nuclear_attraction::IntegralInfo I_x{{arma::vec{1.0}},
+  const nuclear_attraction::IntegralInfo I_x{{arma::vec{pair.first.coef}},
                                              pair.first.angular[0],
                                              pair.second.angular[0],
                                              p, P[0],
@@ -633,7 +633,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
                                              pair.first.exponent,
                                              pair.second.exponent};
 
-  const nuclear_attraction::IntegralInfo I_y{{arma::vec{1.0}},
+  const nuclear_attraction::IntegralInfo I_y{{arma::vec{pair.second.coef}},
                                              pair.first.angular[1],
                                              pair.second.angular[1],
                                              p, P[1],
@@ -678,7 +678,7 @@ double nuclear_attraction_integral(const GaussianFunctionPair & pair,
     sum += multiplied(t_squared[i]) * w[i];
   }
 
-  return sum * pair.first.coef * pair.second.coef;
+  return sum;
 }
 
 arma::mat nuclear_attraction_integral(const geometry::Atoms & atoms,
