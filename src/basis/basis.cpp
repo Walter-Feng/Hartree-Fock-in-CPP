@@ -22,6 +22,8 @@ Basis::Basis(const geometry::Atoms & atoms,
 
   std::ifstream f(data_path + basis_name + ".0.json");
 
+  this->basis_name = basis_name;
+
   if (f.is_open()) {
 
     const nlohmann::json data = nlohmann::json::parse(f);

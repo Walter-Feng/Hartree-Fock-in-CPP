@@ -23,6 +23,7 @@ struct Basis {
   arma::uvec atomic_numbers;
   arma::uvec atom_indices;
   std::vector<std::string> function_labels;
+  std::string basis_name;
 
   Basis();
 

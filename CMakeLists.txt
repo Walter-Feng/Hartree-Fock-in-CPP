@@ -198,3 +198,8 @@ add_executable(test_integral
         )
 
 target_link_libraries(test_integral libHFINCPP)
+
+add_executable(test_hf
+        src/hf/rhf_unit_test.cpp)
+
+target_link_libraries(test_hf libHFINCPP)
