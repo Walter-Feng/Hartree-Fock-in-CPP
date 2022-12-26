@@ -60,6 +60,7 @@ add_library(libHFINCPP
         src/integral/rys_quadrature.cpp
 
         src/scf/scf.cpp
+        src/scf/setup.cpp
         src/scf/occupation.cpp
 
         src/hf/rhf.cpp

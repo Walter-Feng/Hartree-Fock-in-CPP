@@ -14,11 +14,18 @@ nlohmann::json run(const nlohmann::json & input) {
   const basis::Basis basis(atoms, basis_string);
   const std::string method = input.at("method");
 
+  const nlohmann::json extra_commands = input.at("extra_commands");
+
   nlohmann::json output;
   output["input"] = input;
 
+
   if(method == "rhf") {
     output["output"] = hf::rhf(input, atoms, basis);
+  }
+
+  for(const auto & command : extra_commands) {
+
   }
 
   return output;
