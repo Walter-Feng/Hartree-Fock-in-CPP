@@ -30,8 +30,6 @@ struct Basis {
   Basis(const geometry::Atoms & atoms,
         const std::string & basis_name);
 
-  Basis(const Basis & basis);
-
   int n_atoms() const;
   int n_functions() const;
 

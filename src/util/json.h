@@ -14,7 +14,7 @@ std::vector<T> get_list(const nlohmann::json & pt) {
   std::vector<T> result;
 
   for (const auto & unit : pt) {
-    result.push_back(unit.value<T>());
+    result.push_back(unit.get<T>());
   }
 
   return result;
@@ -32,6 +32,55 @@ arma::Mat<T> get_mat(const nlohmann::json & list_tree) {
 
   return result;
 
+}
+
+template<typename T>
+T get(const nlohmann::json & tree) {
+  return tree.get<T>();
+}
+
+template<>
+inline
+arma::vec get(const nlohmann::json & tree) {
+  return get_list<double>(tree);
+}
+
+template<>
+inline
+arma::cx_vec get(const nlohmann::json & tree) {
+  const arma::vec real = get_list<double>(tree["real"]);
+  const arma::vec imag = get_list<double>(tree["imag"]);
+
+  return arma::cx_vec{real, imag};
+}
+
+template<>
+inline
+arma::mat get(const nlohmann::json & tree) {
+  return get_mat<double>(tree);
+}
+
+template<>
+inline
+arma::cx_mat get(const nlohmann::json & tree) {
+  const arma::mat real = get_mat<double>(tree["real"]);
+  const arma::mat imag = get_mat<double>(tree["imag"]);
+
+  return arma::cx_mat{real, imag};
+}
+
+template<>
+inline
+arma::cube get(const nlohmann::json & tree) {
+  const auto length = tree.size();
+  const arma::mat sample = get<arma::mat>(tree[0]);
+
+  arma::cube result(sample.n_rows, sample.n_cols, length);
+  for (unsigned long i=0; i<length; i++) {
+    result.slice(i) = get<arma::mat>(tree[i]);
+  }
+
+  return result;
 }
 
 template<typename T>

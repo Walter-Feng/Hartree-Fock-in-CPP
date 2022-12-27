@@ -12,10 +12,8 @@
 namespace hfincpp::gradient {
 
 using EnergyDriver = std::function<double(const geometry::Atoms &)>;
-using GradientDriver = std::function<arma::mat(const geometry::Atoms &)>;
-
-template<class Result>
-GradientDriver gradient(const Result & result);
+using GradientDriver =
+    std::function<std::pair<double, arma::mat>(const geometry::Atoms &)>;
 
 nlohmann::json gradient(const nlohmann::json & previous_result);
 }

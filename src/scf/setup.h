@@ -13,14 +13,12 @@ struct Setup {
   geometry::Atoms atoms;
   basis::Basis basis;
   scf::OverlapMatrix<T> overlap;
-
-  int print_level;
 };
 
-template<typename T>
+template<class Setup, typename T>
 struct Result {
-  Setup<T> setup;
-  scf::Result<T> result;
+  Setup setup;
+  scf::SCFResult<T> scf_result;
 };
 
 }

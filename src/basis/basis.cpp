@@ -179,12 +179,6 @@ Basis::Basis(const geometry::Atoms & atoms,
   }
 }
 
-Basis::Basis(const Basis & basis) {
-  functions = basis.functions;
-  atom_symbols = basis.atom_symbols;
-  atomic_numbers = basis.atomic_numbers;
-}
-
 int Basis::n_atoms() const {
   return atomic_numbers.n_elem;
 }

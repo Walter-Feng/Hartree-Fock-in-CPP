@@ -51,7 +51,7 @@ TEST_CASE("Check RHF Implementation") {
     hfincpp::geometry::Atoms atoms;
     atoms.atomic_numbers = {1, 9};
     atoms.xyz = {
-        {0, 3.77945},
+        {0, 2},
         {0, 0},
         {0, 0}
     };
@@ -60,8 +60,19 @@ TEST_CASE("Check RHF Implementation") {
 
     const std::string basis_name = "6-31g";
     hfincpp::basis::Basis basis(atoms, basis_name);
-    const scf::DensityMatrix<double> density =
+    nlohmann::json input;
+    input["basis"] = basis_name;
+    input["energy_tolerance"] = 1e-6;
+    input["max_iter"] = 100;
+    input["initial_guess"] = "H0";
+    input["mixing"] = "simple_mixing";
+    input["mixing_alpha"] = 0.1;
+    input["print_level"] = 0;
+    const auto json = hf::rhf(input, atoms, basis);
+    const arma::mat density_in_matrix = util::get<arma::mat>(json["density"]);
+    scf::DensityMatrix<double> density =
         arma::ones(basis.n_functions(), basis.n_functions(), 1);
+    density.slice(0) = density_in_matrix;
     const std::function<arma::mat(const hfincpp::geometry::Atoms &)>
         numerical_gradient_functor =
         [basis_name, density](
@@ -120,4 +131,58 @@ TEST_CASE("Check RHF Implementation") {
     CHECK(arma::abs(analytical - numerical_in_cube).max() < 1e-8);
 
   }
+
+  SECTION("Check whole gradient") {
+
+    hfincpp::geometry::Atoms atoms;
+    atoms.atomic_numbers = {1, 9};
+    atoms.xyz = {
+        {0, 2},
+        {0, 0},
+        {0, 0}
+    };
+    atoms.charge = 0;
+
+    atoms.symbols = {"H", "F"};
+
+    const std::string basis_name = "6-31g";
+    const basis::Basis basis(atoms, basis_name);
+
+    nlohmann::json input;
+    input["basis"] = basis_name;
+    input["energy_tolerance"] = 1e-6;
+    input["max_iter"] = 100;
+    input["initial_guess"] = "H0";
+    input["mixing"] = "simple_mixing";
+    input["mixing_alpha"] = 0.1;
+    input["print_level"] = 0;
+
+    const std::function<double(const hfincpp::geometry::Atoms &)>
+        numerical_gradient_functor =
+        [input, basis_name](
+            const hfincpp::geometry::Atoms & variating_atoms) -> double {
+          const hfincpp::basis::Basis basis(variating_atoms, basis_name);
+          const auto json = hf::rhf(input, variating_atoms, basis);
+          return json["energy"];
+        };
+
+    const arma::mat numerical_gradient =
+        arma::reshape(
+            arma::vec(
+                hfincpp::gradient::numerical(numerical_gradient_functor, atoms)),
+                3, atoms.n_atoms());
+
+    const auto analytical_gradient_driver =
+        hf::gradient::driver(input, atoms, basis);
+
+    const auto analytical_energy_gradient_pair =
+        analytical_gradient_driver(atoms);
+
+    CHECK(analytical_energy_gradient_pair.first == numerical_gradient_functor(atoms));
+    numerical_gradient.print("numerical");
+    analytical_energy_gradient_pair.second.print("analytical");
+    CHECK(arma::abs(numerical_gradient
+    - analytical_energy_gradient_pair.second).max() < 1e-8);
+  }
+
 }
