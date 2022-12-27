@@ -54,6 +54,7 @@ add_library(libHFINCPP
         src/geometry/resolve.cpp
 
         src/gradient/numerical.cpp
+        src/gradient/utils.cpp
 
         src/integral/integral.cpp
         src/integral/obara_saika.cpp

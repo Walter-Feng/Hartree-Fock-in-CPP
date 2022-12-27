@@ -2,6 +2,7 @@
 #define HF_RHF_H
 
 #include <json.hpp>
+
 #include "gradient/driver.h"
 #include "geometry/geometry.h"
 #include "basis/basis.h"

@@ -179,10 +179,8 @@ TEST_CASE("Check RHF Implementation") {
         analytical_gradient_driver(atoms);
 
     CHECK(analytical_energy_gradient_pair.first == numerical_gradient_functor(atoms));
-    numerical_gradient.print("numerical");
-    analytical_energy_gradient_pair.second.print("analytical");
     CHECK(arma::abs(numerical_gradient
-    - analytical_energy_gradient_pair.second).max() < 1e-8);
+    - analytical_energy_gradient_pair.second).max() < 3e-8);
   }
 
 }

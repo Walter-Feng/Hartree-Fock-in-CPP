@@ -3,6 +3,8 @@
 #include "scf/scf.h"
 #include "scf/occupation.h"
 
+#include "gradient/utils.h"
+
 #include "integral/obara_saika.h"
 #include "integral/rys_quadrature.h"
 
@@ -314,13 +316,23 @@ hfincpp::gradient::GradientDriver driver(const nlohmann::json & input,
         const arma::mat energy_weighted_density =
             orbitals * arma::diagmat(eigenvalues % occupations) * orbitals.t();
 
+        const arma::cube gradient_inverse_r =
+            hfincpp::gradient::utils::inverse_r(atoms.xyz);
+
         arma::mat gradient(arma::size(atoms.xyz));
         for(arma::uword i=0; i<gradient.n_elem; i++) {
+
+          const arma::uword i_atom = i / 3;
+          const arma::uword dimension = i % 3;
+
           gradient(i) =
               arma::accu(gradient_H0.slice(i) % density)
               - arma::accu(energy_weighted_density % gradient_overlap.slice(i))
               + 0.5 * arma::dot(vectorised_density,
-                                gradient_2e.slice(i) * vectorised_density);
+                                gradient_2e.slice(i) * vectorised_density)
+              + atoms.atomic_numbers(i_atom) *
+                 arma::dot(gradient_inverse_r.slice(dimension).col(i_atom),
+                           atoms.atomic_numbers);
 
         }
 
