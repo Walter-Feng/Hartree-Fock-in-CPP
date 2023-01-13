@@ -302,7 +302,9 @@ hfincpp::gradient::GradientDriver driver(const nlohmann::json & input,
           (const geometry::Atoms & atoms) -> std::pair<double, arma::mat> {
         const basis::Basis basis(atoms, old_basis.basis_name);
         const auto scf_setup = setup(input, atoms, basis);
-        const auto result = rhf(input, scf_setup);
+        auto scf_input = input;
+        scf_input["print_level"] = -1;
+        const auto result = rhf(scf_input, scf_setup);
         const arma::cube gradient_H0 = core_hamiltonian(atoms, basis);
         const arma::cube gradient_2e = two_electron_integral(basis);
         const arma::cube gradient_overlap =

@@ -15,7 +15,6 @@ using EnergyDriver = std::function<double(const geometry::Atoms &)>;
 using GradientDriver =
     std::function<std::pair<double, arma::mat>(const geometry::Atoms &)>;
 
-nlohmann::json gradient(const nlohmann::json & previous_result);
 }
 
 #endif //GRADIENT_DRIVER_H

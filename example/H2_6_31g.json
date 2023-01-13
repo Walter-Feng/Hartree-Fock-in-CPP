@@ -17,5 +17,7 @@
   "initial_guess": "H0",
   "mixing": "simple_mixing",
   "mixing_alpha": 0.2,
-  "print_level": 1
+  "print_level": 1,
+
+  "extra_commands": ["gradient"]
 }
