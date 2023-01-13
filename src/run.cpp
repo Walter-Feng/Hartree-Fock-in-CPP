@@ -28,11 +28,8 @@ nlohmann::json run(const nlohmann::json & input) {
 
     for(const auto & command : extra_commands) {
       if(command == "gradient") {
-
-        if(method == "rhf") {
-          output["gradient"] =
-              gradient::gradient(input, atoms, basis, method)["gradient"];
-        }
+        output["gradient"] =
+            gradient::gradient(input, atoms, basis, method)["gradient"];
       }
     }
   }
