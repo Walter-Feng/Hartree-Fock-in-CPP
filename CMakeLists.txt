@@ -53,6 +53,7 @@ add_library(libHFINCPP
         src/geometry/geometry.cpp
         src/geometry/resolve.cpp
 
+        src/gradient/driver.cpp
         src/gradient/gradient.cpp
         src/gradient/numerical.cpp
         src/gradient/utils.cpp

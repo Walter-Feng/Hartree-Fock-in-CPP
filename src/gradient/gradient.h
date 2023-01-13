@@ -8,10 +8,10 @@
 
 namespace hfincpp::gradient {
 
-nlohmann::json driver(const nlohmann::json & input,
-                      const geometry::Atoms & atoms,
-                      const basis::Basis & basis,
-                      const std::string method);
+nlohmann::json gradient(const nlohmann::json & input,
+                        const geometry::Atoms & atoms,
+                        const basis::Basis & basis,
+                        const std::string method);
 
 
 }

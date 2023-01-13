@@ -31,7 +31,7 @@ nlohmann::json run(const nlohmann::json & input) {
 
         if(method == "rhf") {
           output["gradient"] =
-              gradient::driver(input, atoms, basis, method)["gradient"];
+              gradient::gradient(input, atoms, basis, method)["gradient"];
         }
       }
     }
