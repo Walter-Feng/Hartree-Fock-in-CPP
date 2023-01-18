@@ -18,13 +18,18 @@ As a comparison, the features in this program are:
 
    1. The programming style is completely in C++ - OOP, templates, but no more pointers.
 
-   2. Tons of dependencies, including 
-        Boost (you need to install yourself)
+   2. Tons of dependencies, including,
+   
+   Ones you need to install yourself:
+   
+        Boost
         
-        Armadillo (same as above)
+        Armadillo 
         
-        GSL - GNU Scientific Library (same as above)
-        
+        GSL - GNU Scientific Library
+   
+   and others I help you fetch and compile:
+   
         sunqm/libcint (but only using its rys quadrature roots generator)
         
         catchorg/Catch2
@@ -58,6 +63,12 @@ Hartree-Fock-in-CPP-repo-directory: $ mkdir build
 Hartree-Fock-in-CPP-repo-directory/build: $ cmake ..
 Hartree-Fock-in-CPP-repo-directory/build: $ make
 ```
+But you might have installed the external dependencies, e.g. Armadillo, elsewhere. In this case,
+you may need to specify the directory to these dependencies using keyword 
+```
+$ cmake -DCMAKE_PREFIX_PATH=/dir/to/dependency ..
+```
+to correctly link the libraries.
 
 Type
 ```
