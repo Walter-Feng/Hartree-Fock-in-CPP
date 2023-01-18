@@ -93,7 +93,7 @@ find_package(
 
 if (${ARMADILLO_FOUND})
     message("Found Armadillo Library,")
-    message("     ARMADILLO_VERSION: " ${ARMADILLO_VERSION_STRINcatchG})
+    message("     ARMADILLO_VERSION: " ${ARMADILLO_VERSION_STRING})
     message("     ARMADILLO_LIBRARIES   : " ${ARMADILLO_LIBRARIES})
     message("     ARMADILLO_INCLUDE_DIRS: " ${ARMADILLO_INCLUDE_DIRS})
 
@@ -107,7 +107,7 @@ find_package(
 
 if (${HDF5_FOUND})
     message("Found HDF5 Library,")
-    message("     HDF5_VERSION: " ${HDF5_VERSION_STRINcatchG})
+    message("     HDF5_VERSION: " ${HDF5_VERSION})
     message("     HDF5_LIBRARIES   : " ${HDF5_LIBRARIES})
     message("     HDF5_INCLUDE_DIRS: " ${HDF5_INCLUDE_DIRS})
 
