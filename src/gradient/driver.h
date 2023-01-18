@@ -19,6 +19,10 @@ GradientDriver driver(const nlohmann::json & input,
                       const basis::Basis & basis,
                       const std::string method);
 
+EnergyDriver energy_driver(const nlohmann::json & input,
+                           const geometry::Atoms & atoms,
+                           const basis::Basis & basis,
+                           const std::string method);
 }
 
 #endif //GRADIENT_DRIVER_H

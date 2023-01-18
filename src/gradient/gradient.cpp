@@ -9,7 +9,14 @@ nlohmann::json gradient(const nlohmann::json & input,
                         const geometry::Atoms & atoms,
                         const basis::Basis & basis,
                         const std::string method) {
+
+  const int print_level = input["print_level"];
+
   const auto gradient_driver = driver(input, atoms, basis, method);
+
+  if(print_level >= 1) {
+    fmt::print("Calculating gradient ...\n");
+  }
 
   const auto result = gradient_driver(atoms);
 
@@ -17,7 +24,7 @@ nlohmann::json gradient(const nlohmann::json & input,
   util::put(json_output, "energy", result.first);
   util::put(json_output, "gradient", result.second);
 
-  const int print_level = input["print_level"];
+
   if(print_level >= 1) {
     int width = 18;
     int precision = 8;

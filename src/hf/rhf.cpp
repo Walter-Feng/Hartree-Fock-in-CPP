@@ -342,4 +342,19 @@ hfincpp::gradient::GradientDriver driver(const nlohmann::json & input,
       };
 }
 
+
+hfincpp::gradient::EnergyDriver energy_driver(const nlohmann::json & input,
+                                              const geometry::Atoms & old_atoms,
+                                              const basis::Basis & old_basis) {
+  return
+      [input, old_atoms, old_basis]
+          (const geometry::Atoms & atoms) -> double {
+        const basis::Basis basis(atoms, old_basis.basis_name);
+        auto input_copy = input;
+        input_copy["print_level"] = -1;
+        const double energy = rhf(input_copy, atoms, basis)["energy"];
+        return energy;
+      };
+}
+
 }

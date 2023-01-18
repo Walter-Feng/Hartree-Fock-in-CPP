@@ -62,6 +62,8 @@ add_library(libHFINCPP
         src/integral/obara_saika.cpp
         src/integral/rys_quadrature.cpp
 
+        src/optimize/optimize.cpp
+
         src/scf/scf.cpp
         src/scf/setup.cpp
         src/scf/occupation.cpp

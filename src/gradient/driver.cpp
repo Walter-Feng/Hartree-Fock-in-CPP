@@ -15,4 +15,15 @@ GradientDriver driver(const nlohmann::json & input,
   }
 }
 
+EnergyDriver energy_driver(const nlohmann::json & input,
+                           const geometry::Atoms & atoms,
+                           const basis::Basis & basis,
+                           const std::string method) {
+  if(method == "rhf") {
+    return hf::gradient::energy_driver(input, atoms, basis);
+  } else {
+    throw Error("method not recognized");
+  }
+}
+
 }

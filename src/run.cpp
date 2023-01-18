@@ -3,6 +3,7 @@
 #include "basis/basis.h"
 #include "geometry/resolve.h"
 #include "gradient/gradient.h"
+#include "optimize/optimize.h"
 #include "hf/rhf.h"
 
 namespace hfincpp {
@@ -30,6 +31,10 @@ nlohmann::json run(const nlohmann::json & input) {
       if(command == "gradient") {
         output["gradient"] =
             gradient::gradient(input, atoms, basis, method)["gradient"];
+      }
+
+      if(command == "optimize") {
+        output["optimize"] = optimize::optimize(input, atoms, basis, method);
       }
     }
   }

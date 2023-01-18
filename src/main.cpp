@@ -7,6 +7,7 @@
 #include <json.hpp>
 
 #include "run.h"
+#include "global/error.h"
 #include "util/time.h"
 
 
@@ -56,11 +57,17 @@ int main(const int argc, const char * argv[]) {
   ///////////////////// Read Input File /////////////////////
 
 
-  std::ifstream input_file_stream(args::get(input_flag));
+
   nlohmann::json input;
   if(str_input) {
     input = nlohmann::json::parse(args::get(str_input));
   } else {
+    const std::string input_filename = args::get(input_flag);
+    if(input_filename.empty()) {
+      throw Error("No string input or file input is given");
+    }
+    std::ifstream input_file_stream(args::get(input_flag));
+
     input_file_stream >> input;
   }
 

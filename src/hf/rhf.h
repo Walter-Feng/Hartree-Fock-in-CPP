@@ -48,6 +48,10 @@ arma::cube two_electron_integral(const basis::Basis & basis);
 hfincpp::gradient::GradientDriver driver(const nlohmann::json & input,
                                          const geometry::Atoms & atoms,
                                          const basis::Basis & basis);
+
+hfincpp::gradient::EnergyDriver energy_driver(const nlohmann::json & input,
+                                              const geometry::Atoms & old_atoms,
+                                              const basis::Basis & old_basis);
 }
 
 

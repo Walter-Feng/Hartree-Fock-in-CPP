@@ -8,7 +8,7 @@
 #include "util/json.h"
 #include "util/time.h"
 #include "util/printer.h"
-#include "util/error.h"
+#include "global/error.h"
 
 namespace hfincpp::scf {
 
@@ -59,6 +59,7 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
     total_length = 6 + width * 3;
 
     if (print_header) {
+      fmt::print("Performing SCF ...\n");
       for (int i = 0; i < total_length; i++) {
         fmt::print("=");
       }
