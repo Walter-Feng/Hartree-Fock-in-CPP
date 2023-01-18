@@ -125,23 +125,14 @@ Printer<gsl_multimin_fdfminimizer *>
     total_length = 6 + width * 3;
 
     if (print_header) {
-      fmt::print("\n");
       fmt::print("Performing optmization ...\n");
-
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
-
+      print_separator(total_length);
       fmt::print("{:>{}}", "|Iter|", 6);
       fmt::print("{:>{}}", "Time / s |", width);
       fmt::print("{:>{}}", "Energy / a.u. |", width);
       fmt::print("{:>{}}", "Grad / a.u. |", width);
       fmt::print("\n");
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
+      print_separator(total_length);
     }
 
     fmt::print("{:>{}}", iter, 6);
@@ -223,12 +214,7 @@ optimize(
     if (status == GSL_SUCCESS) {
 
       if(print_level >= 1) {
-        for (int i = 0; i < total_length; i++) {
-          fmt::print("=");
-        }
-        fmt::print("\n");
-
-        fmt::print("\n");
+        print_separator(total_length);
       }
 
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
@@ -278,30 +264,20 @@ nlohmann::json optimize(const nlohmann::json & input,
 
     int total_length = 6 + width * 3;
 
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
-    }
-    fmt::print("\n");
-
+    print_separator(total_length);
     fmt::print("{:>{}}", "|Atom|", 6);
     fmt::print("{:>{}}", "X / Angstrom |", width);
     fmt::print("{:>{}}", "Y / Angstrom |", width);
     fmt::print("{:>{}}", "Z / Angstrom |", width);
     fmt::print("\n");
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
-    }
-    fmt::print("\n");
+    print_separator(total_length);
 
     for(int atom=0; atom < atoms.n_atoms(); atom++) {
       fmt::print("{:>{}}", atoms.symbols[atom], 6);
       print(arma::rowvec(optimized_geometry.second.xyz.col(atom).t()), width, precision);
       fmt::print("\n");
     }
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
-    }
-    fmt::print("\n");
+    print_separator(total_length);
   }
 
 

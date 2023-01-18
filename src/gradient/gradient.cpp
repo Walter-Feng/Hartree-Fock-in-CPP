@@ -36,30 +36,24 @@ nlohmann::json gradient(const nlohmann::json & input,
 
     int total_length = 6 + width * 3;
 
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
+    if(print_level >= 1) {
+      print_separator(total_length);
     }
-    fmt::print("\n");
 
     fmt::print("{:>{}}", "|Atom|", 6);
     fmt::print("{:>{}}", "X / (Ha / bohr) |", width);
     fmt::print("{:>{}}", "Y / (Ha / bohr) |", width);
     fmt::print("{:>{}}", "Z / (Ha / bohr) |", width);
     fmt::print("\n");
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
-    }
-    fmt::print("\n");
-
+    print_separator(total_length);
     for(int atom=0; atom < atoms.n_atoms(); atom++) {
       fmt::print("{:>{}}", atoms.symbols[atom], 6);
       print(arma::rowvec(result.second.col(atom).t()), width, precision);
       fmt::print("\n");
     }
-    for (int i = 0; i < total_length; i++) {
-      fmt::print("=");
+    if(print_level >= 1) {
+      print_separator(total_length);
     }
-    fmt::print("\n");
   }
 
 

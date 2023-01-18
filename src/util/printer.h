@@ -157,6 +157,15 @@ Printer<State> operator<<(const Printer<State> a, const Printer<State> b) {
   };
 }
 
+inline
+void print_separator(const int length, const std::string symbol = "=") {
+  std::string line_separator = "";
+  for (int i = 0; i < length; i++) {
+    line_separator += symbol;
+  }
+  fmt::print(line_separator + "\n");
+}
+
 }
 
 #endif //UTIL_PRINTER_H

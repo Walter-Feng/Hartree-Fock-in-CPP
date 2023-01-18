@@ -60,20 +60,13 @@ Printer<SCFWrapper> generic_scf_printer = [](const SCFWrapper & state,
 
     if (print_header) {
       fmt::print("Performing SCF ...\n");
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
-
+      print_separator(total_length);
       fmt::print("{:>{}}", "|Iter|", 6);
       fmt::print("{:>{}}", "Time / s |", width);
       fmt::print("{:>{}}", "Energy / a.u. |", width);
       fmt::print("{:>{}}", "Energy Diff |", width);
       fmt::print("\n");
-      for (int i = 0; i < total_length; i++) {
-        fmt::print("=");
-      }
-      fmt::print("\n");
+      print_separator(total_length);
     }
 
     fmt::print("{:>{}}", iter, 6);
@@ -229,12 +222,7 @@ SCFResult<T> scf(const EnergyBuilder<T> & energy_builder,
                                           print_level, false);
     if (std::abs(diff) < energy_tolerance) {
       if(print_level >= 1) {
-        for (int i = 0; i < total_length; i++) {
-          fmt::print("=");
-        }
-        fmt::print("\n");
-
-        fmt::print("\n");
+        print_separator(total_length);
       }
 
       return {eigenvalues, orbitals, occupation_vectors, new_state, overlap,
