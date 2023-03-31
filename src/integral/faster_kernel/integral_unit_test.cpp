@@ -31,10 +31,10 @@ TEST_CASE("Check pairwise information") {
   CHECK(pair_info.angular_momenta.n_rows == n_pairs);
   CHECK(pair_info.indexing.n_rows == n_pairs);
 
-  ARMA_DEBUG(pair_info.exponents);
-  ARMA_DEBUG(pair_info.prefactors);
-  ARMA_DEBUG(pair_info.centers);
-  ARMA_DEBUG(pair_info.screening_conditions);
-  ARMA_DEBUG(pair_info.angular_momenta);
-  ARMA_DEBUG(pair_info.indexing);
+//  ARMA_DEBUG(pair_info.exponents);
+//  ARMA_DEBUG(pair_info.prefactors);
+//  ARMA_DEBUG(pair_info.centers);
+//  ARMA_DEBUG(pair_info.screening_conditions);
+//  ARMA_DEBUG(pair_info.angular_momenta);
+//  ARMA_DEBUG(pair_info.indexing);
 }

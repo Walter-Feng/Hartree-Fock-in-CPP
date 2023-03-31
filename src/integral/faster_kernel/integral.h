@@ -17,7 +17,7 @@ struct UpperTriangularFunctionPairs {
                            // in (ij) pair
 };
 
-UpperTriangularFunctionPairs generate_function_pairs(const basis::Basis & basis);
+UpperTriangularFunctionPairs generate_function_pairs(basis::Basis basis);
 }
 
 

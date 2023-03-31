@@ -63,6 +63,7 @@ add_library(libHFINCPP
         src/integral/rys_quadrature.cpp
 
         src/integral/faster_kernel/integral.cpp
+        src/integral/faster_kernel/rys_quadrature.cpp
 
         src/optimize/optimize.cpp
 
@@ -203,7 +204,8 @@ target_link_libraries(test_basis libHFINCPP)
 add_executable(test_integral
 #        src/integral/obara_saika_unit_test.cpp
 #        src/integral/rys_quadrature_unit_test.cpp
-        src/integral/faster_kernel/integral_test.cpp
+        src/integral/faster_kernel/integral_unit_test.cpp
+        src/integral/faster_kernel/rys_quadrature_unit_test.cpp
         )
 
 target_link_libraries(test_integral libHFINCPP)

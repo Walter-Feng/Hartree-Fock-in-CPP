@@ -1,5 +1,3 @@
-#include <boost/math/special_functions/binomial.hpp>
-
 #include "integral.h"
 
 #include "integral/rys_quadrature.h"
@@ -7,18 +5,9 @@
 
 namespace hfincpp::integral::faster_kernel {
 
-template<typename T>
-arma::Mat<T> concatenate_vertically(std::vector<arma::Mat<T>> & matrices) {
-  arma::Mat<T> head = matrices[0];
-  for(size_t i=0; i<matrices.size(); i++) {
-    head = arma::join_vert(head, matrices[i]);
-  }
+UpperTriangularFunctionPairs generate_function_pairs(basis::Basis basis) {
 
-  return head;
-}
-
-UpperTriangularFunctionPairs generate_function_pairs(const basis::Basis & basis) {
-
+  basis = basis.sort_by_angular_momentum();
   arma::uword n_function_pairs = basis.n_functions() * (basis.n_functions() + 1) / 2;
   std::vector<UpperTriangularFunctionPairs> list_of_function_pairs(n_function_pairs);
 
