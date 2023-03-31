@@ -104,6 +104,19 @@ Basis::Basis(const geometry::Atoms & atoms,
             coefficients(i) = std::stod(coefficient);
             exponents(i) = std::stod(exponent);
           }
+
+          const arma::uvec non_zero_coefficients = arma::find(coefficients);
+
+          const GTOShell shell{center,
+                               i_angular_momentum,
+                               exponents(non_zero_coefficients)};
+
+          shells.push_back(shell);
+
+          std::string shell_label = std::to_string(i_atom + 1) + atoms.symbols[i_atom];
+          shell_label += angular_string;
+          shell_labels.push_back(shell_label);
+
           /*
            * Hey, think of this as follows:
            * You would like to split some balls, total number being
@@ -152,7 +165,6 @@ Basis::Basis(const geometry::Atoms & atoms,
               label += ay_string;
               label += az_string;
 
-              const arma::uvec non_zero_coefficients = arma::find(coefficients);
               const GTOFunction function{center, angular,
                                          exponents(non_zero_coefficients),
                                          coefficients(non_zero_coefficients)
@@ -163,11 +175,8 @@ Basis::Basis(const geometry::Atoms & atoms,
               atom_indices_in_std_vector.push_back(i_atom);
             }
           }
-
-
         }
       }
-
     }
 
     atomic_numbers = atoms.atomic_numbers;
@@ -181,6 +190,10 @@ Basis::Basis(const geometry::Atoms & atoms,
 
 int Basis::n_atoms() const {
   return atomic_numbers.n_elem;
+}
+
+int Basis::n_shells() const {
+  return shells.size();
 }
 
 int Basis::n_functions() const {
