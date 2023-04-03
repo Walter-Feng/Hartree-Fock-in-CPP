@@ -30,6 +30,7 @@ struct Basis {
   std::vector<std::string> atom_symbols;
   arma::uvec atomic_numbers;
   arma::uvec atom_indices;
+  arma::uvec shell_indices;
   std::vector<std::string> function_labels;
   std::vector<std::string> shell_labels;
   std::string basis_name;

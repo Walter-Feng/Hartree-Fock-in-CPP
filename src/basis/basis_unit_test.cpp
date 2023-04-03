@@ -15,5 +15,9 @@ TEST_CASE("Check Basis struct") {
     atoms.symbols = {"O", "H", "H"};
 
     hfincpp::basis::Basis basis(atoms, "3-21g");
+
+    ARMA_DEBUG(basis.shell_indices);
+    ARMA_DEBUG(basis.to_conventional_function_indexing);
+
   }
 }

@@ -31,6 +31,7 @@ Basis::Basis(const geometry::Atoms & atoms,
     Basis basis;
 
     std::vector<arma::uword> atom_indices_in_std_vector;
+    std::vector<arma::uword> shell_indices_in_std_vector;
     const int n_atoms = atoms.n_atoms();
     for (int i_atom = 0; i_atom < n_atoms; i_atom++) {
 
@@ -172,6 +173,7 @@ Basis::Basis(const geometry::Atoms & atoms,
 
               functions.push_back(function);
               function_labels.push_back(label);
+              shell_indices_in_std_vector.push_back(shells.size()-1);
               atom_indices_in_std_vector.push_back(i_atom);
             }
           }
@@ -182,6 +184,9 @@ Basis::Basis(const geometry::Atoms & atoms,
     atomic_numbers = atoms.atomic_numbers;
     atom_symbols = atoms.symbols;
     atom_indices = arma::uvec{atom_indices_in_std_vector};
+    shell_indices = arma::uvec{shell_indices_in_std_vector};
+    to_conventional_function_indexing =
+        arma::linspace<arma::uvec>(0, this->n_functions() - 1, 1);
 
     *this = this->sort_by_angular_momentum();
 
@@ -254,7 +259,10 @@ Basis Basis::sort_by_angular_momentum() const {
   new_basis.atomic_numbers = atomic_numbers;
   new_basis.atom_symbols = atom_symbols;
   new_basis.atom_indices = atom_indices(function_indexing);
+  new_basis.shell_indices = shell_indices(function_indexing);
   new_basis.basis_name = basis_name;
+  new_basis.to_conventional_function_indexing =
+      to_conventional_function_indexing(function_indexing);
   return new_basis;
 }
 }
