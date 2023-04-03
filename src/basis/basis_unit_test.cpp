@@ -16,15 +16,4 @@ TEST_CASE("Check Basis struct") {
 
     hfincpp::basis::Basis basis(atoms, "3-21g");
   }
-
-  SECTION("arma playground") {
-    arma::Mat<int> field = arma::zeros<arma::Mat<int>>(5,5);
-    for(int i=0; i<5; i++) {
-      for(int j=i; j<5; j++) {
-        field(i, j) = (5 + 5 - i + 1) * i / 2 + j - i;
-      }
-    }
-
-    field.print();
-  }
 }

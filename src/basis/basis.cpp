@@ -183,6 +183,8 @@ Basis::Basis(const geometry::Atoms & atoms,
     atom_symbols = atoms.symbols;
     atom_indices = arma::uvec{atom_indices_in_std_vector};
 
+    *this = this->sort_by_angular_momentum();
+
   } else {
     throw Error("The basis is not found");
   }
@@ -214,25 +216,45 @@ for(int i=0; i<n_atoms(); i++) {
 
 Basis Basis::sort_by_angular_momentum() const {
   const auto n_functions = functions.size();
+  const auto n_shells = shells.size();
   arma::uvec angular_momentum(n_functions);
+  arma::uvec angular_momentum_in_shells(n_shells);
+
   for(size_t i=0; i<n_functions; i++) {
     angular_momentum(i) = arma::sum(functions[i].angular);
   }
 
+  for(size_t i=0; i<n_shells; i++) {
+    angular_momentum_in_shells(i) = arma::sum(shells[i].angular);
+  }
+
   Basis new_basis;
-  std::vector<GTOFunction> new_function_basis(n_functions);
-  std::vector<std::string> new_function_labels(n_functions);
+  arma::uvec function_indexing;
 
   for(arma::uword l=0; l<=arma::max(angular_momentum); l++) {
     const arma::uvec find = arma::find(angular_momentum == l);
+    function_indexing = arma::join_vert(function_indexing, find);
+    const arma::uvec find_shell = arma::find(angular_momentum_in_shells == l);
+
     assert(find.is_sorted());
+    assert(find_shell.is_sorted());
+
     for(arma::uword i=0; i<find.n_elem; i++) {
       new_basis.functions.push_back(functions[find(i)]);
       new_basis.function_labels.push_back(function_labels[find(i)]);
     }
+
+    for(arma::uword i=0; i<find_shell.n_elem; i++) {
+      new_basis.shells.push_back(shells[find_shell(i)]);
+      new_basis.shell_labels.push_back(shell_labels[find_shell(i)]);
+    }
   }
+
+  assert(function_indexing.n_elem == atom_indices.n_elem);
   new_basis.atomic_numbers = atomic_numbers;
   new_basis.atom_symbols = atom_symbols;
+  new_basis.atom_indices = atom_indices(function_indexing);
+  new_basis.basis_name = basis_name;
   return new_basis;
 }
 }

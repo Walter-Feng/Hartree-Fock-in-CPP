@@ -33,6 +33,7 @@ struct Basis {
   std::vector<std::string> function_labels;
   std::vector<std::string> shell_labels;
   std::string basis_name;
+  arma::uvec to_conventional_function_indexing;
 
   Basis();
 
