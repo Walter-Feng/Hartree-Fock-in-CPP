@@ -1,6 +1,7 @@
 #include <boost/math/special_functions/binomial.hpp>
 
 #include "integral.h"
+#include "rys_quadrature.h"
 
 namespace hfincpp::integral::faster_kernel::rys_quadrature {
 
@@ -21,13 +22,12 @@ double binomial_expand(const int i,
                        const double PB) {
 
   double result = 0;
-  for(int n=0; n<i; n++) {
+  for(int n=0; n<=i; n++) {
     result += binomial_coefficient(a, n) * binomial_coefficient(b, i-n)
-              * std::pow(PA, a-n) * std::pow(PB, b-n+i);
+              * std::pow(PA, a-n) * std::pow(PB, b+n-i);
   }
   return result;
 }
-
 
 
 }
