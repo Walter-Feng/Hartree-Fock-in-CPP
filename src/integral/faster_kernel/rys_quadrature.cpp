@@ -20,11 +20,10 @@ double binomial_expand(const int i,
                        const int b,
                        const double PA,
                        const double PB) {
-
   double result = 0;
-  for(int n=0; n<=i; n++) {
+  for(int n=std::max(i-b, 0); n<=std::min(i, a); n++) {
     result += binomial_coefficient(a, n) * binomial_coefficient(b, i-n)
-              * std::pow(PA, a-n) * std::pow(PB, b+n-i);
+              * pow(PA, a-n) * pow(PB, b+n-i);
   }
   return result;
 }

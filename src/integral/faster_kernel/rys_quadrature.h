@@ -14,6 +14,7 @@ void electron_repulsive_integral_kernel(double * cache,
                                         const double B01,
                                         const double B10,
                                         const double B00) {
+  int zero = 0;
   int one = 1;
   int two = 2;
   int a_width = a + one;
@@ -22,22 +23,45 @@ void electron_repulsive_integral_kernel(double * cache,
   *cache = 1.;
   cache += stride;
 
-  for (int i = one; i <= a; i++) {
-    *cache =
-        C00 * cache[minus_stride] + B10 * (i - one) * cache[two * minus_stride];
+  if constexpr(a>=1) {
+    *cache = C00;
 
     cache += stride;
   }
-  for (int j = one; j <= b; j++) {
-    for (int i = 0; i <= a; i++) {
+
+  if constexpr(a>1) {
+    for (int i = two; i <= a; i++) {
+      *cache =
+          C00 * cache[minus_stride] + B10 * (i - one) * cache[two * minus_stride];
+
+      cache += stride;
+    }
+  }
+
+  if constexpr(b>=1) {
+    for (int i = zero; i <= a; i++) {
       *cache =
           D00 * cache[minus_b_stride]
-          + B01 * (j-one) * cache[two * minus_b_stride]
           + B00 * i * cache[minus_stride + minus_b_stride];
 
       cache += stride;
     }
   }
+
+  if constexpr(b>1) {
+    for (int j = two; j <= b; j++) {
+      for (int i = zero; i <= a; i++) {
+        *cache =
+            D00 * cache[minus_b_stride]
+            + B01 * (j - one) * cache[two * minus_b_stride]
+            + B00 * i * cache[minus_stride + minus_b_stride];
+
+        cache += stride;
+      }
+    }
+  }
+
+
 }
 
 int binomial_coefficient(int n, int r);
@@ -90,7 +114,7 @@ double electron_repulsive_integral(const ERI & eri_info) {
   assert(arma::sum(eri_info.A.angular) + arma::sum(eri_info.B.angular) == a);
   assert(arma::sum(eri_info.C.angular) + arma::sum(eri_info.D.angular) == b);
 
-  const int n_rys_roots = (a + b + 1) / 2;
+  const int n_rys_roots = (a + b) / 2 + 1;
 
   arma::vec u(n_rys_roots);
   arma::vec w(n_rys_roots);
