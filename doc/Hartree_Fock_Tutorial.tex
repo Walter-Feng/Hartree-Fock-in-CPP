@@ -222,12 +222,12 @@ $\rightarrow$ This allows decomposition of integrals into three independent dime
 \end{equation}
 where we can see that the derivative is also converted to a sum of two Gaussian functions, or in other way, a Gaussian function with higher-order polynomial can be decomposed into a sum of a derivative of Gaussian function and another Gaussian function with lower-order polynomial. This gives a good hint of a possible recursion relation for the overlap integral. Focusing only on the x component of the overlap integral,
 \begin{equation}
-    ( \phi_1 | \phi_2 ) \rightarrow \int dx (x-x_1)^a e^{-\alpha (x-x_1)^2} (x-x_2)^b e^{-\beta (x-x_2)^2} \rightarrow \langle a | b \rangle
+    ( \phi_1 | \phi_2 ) \rightarrow \int dx (x-x_1)^a e^{-\alpha (x-x_1)^2} (x-x_2)^b e^{-\beta (x-x_2)^2} \rightarrow ( a | b )
 \end{equation}
 where $a$ and $b$ are used to directly represent the orbitals with different angular momentum. Using the property of integral-derivative pair,
     \begin{equation}
         \int dx \, \partial_x ( \phi_1 | \phi_2 ) = 0
-    \end{equation} 
+    \end{equation}
     we have
     \begin{equation}
         a ( a-1 | b ) - 2 \alpha ( a + 1 | b ) + b (a | b - 1 ) - 2 \beta ( a | b +1 ) = 0
@@ -242,9 +242,9 @@ This gives
 \end{equation}
 And this also applies to $y$ and $z$ component. Now that we have a recursion relation, we can decompose the original over integral into a linear combination of 0-0 type overlap integral
 \begin{equation}
-    \langle \phi_1 | \phi_2 \rangle = c_1 \langle 0 | 0 \rangle + c_2 \langle 0 | 0 \rangle + ...
+    ( \phi_1 | \phi_2 ) = c_1 ( 0 | 0 ) + c_2 ( 0 | 0 ) + ...
 \end{equation}
-whose value can be easily calculated, as they are only a simple multiplication of Gaussian functions. 
+whose value can be easily calculated, as they are only a simple multiplication of Gaussian functions.
 
 As a summary, a recursion relation of the integrals can help us decompose the complicated ones to a linear combination of simple Gaussian integrals.
 
@@ -257,11 +257,11 @@ In quantum mechanics, the momentum operator is a derivative operator - and this 
 \subsection{Nuclear Attraction Integral}
 The definition is
 \begin{equation}
-    Z_{ij} = \langle \phi_i | \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|} |\phi_j \rangle = \int \frac{\phi_i(\boldsymbol{r}) \phi_j(\boldsymbol{r})}{|\boldsymbol{r} - \boldsymbol{r}_l|} d \boldsymbol{r} 
+    Z_{ij} = \langle \phi_i | \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|} |\phi_j \rangle = \int \frac{\phi_i(\boldsymbol{r}) \phi_j(\boldsymbol{r})}{|\boldsymbol{r} - \boldsymbol{r}_l|} d \boldsymbol{r}
 \end{equation}
 where $\boldsymbol{r}_l$ is the coordinates of the nucleus.
 
-Obviously, the new term $\frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|}$ messes everything up, especially regarding the painful truth that
+Obviously, the new term $\frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|}$ messes everything up, especially when reading the painful truth that
 \begin{equation}
     \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l| } = \frac{1}{\sqrt{(r_x - r_{l,x})^2 + (r_{y} - r_{l,y})^2 + (r_{z} - r_{l,z})^2}}
 \end{equation}
@@ -273,36 +273,36 @@ Using our previous notation,
 \begin{equation}
     \exp \left[-\left(\boldsymbol{r}-\boldsymbol{r}_{l}\right)^{2} u^{2}\right] = g(\boldsymbol{r};u^2,\boldsymbol{0},\boldsymbol{r}_l)
 \end{equation}
-Then the problem reduces to a three-center overlap integral,
+the problem reduces to a three-center overlap integral,
 \begin{equation}
-    \langle \phi_i | \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|} |\phi_j \rangle = \frac{2}{\pi^{1 / 2}} \int_0^\infty du \, (\phi_i|\boldsymbol{0}_{\boldsymbol{r}_2}^{u^2}|\phi_j)
+    ( \phi_i | \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|} |\phi_j ) = \frac{2}{\pi^{1 / 2}} \int_0^\infty du \, (\phi_i|\boldsymbol{0}_{\boldsymbol{r}_2}^{u^2}|\phi_j)
 \end{equation}
 Just like the previous overlap integral, we also have a recursion relation for the three-center version,
 \begin{equation}
 \begin{aligned}
-    \left(\boldsymbol{a}+\boldsymbol{1}_{i}|\boldsymbol{c}| \boldsymbol{b}\right)=&\left(G_{i}-A_{i}\right)(\boldsymbol{a}|\boldsymbol{c}| \boldsymbol{b})+\frac{a_i}{2\left(\zeta+\zeta_{c}\right)} \\ 
-& \times \left(\boldsymbol{a}-\boldsymbol{1}_{i}|\boldsymbol{c}| \boldsymbol{b}\right)+\frac{ b_i}{2\left(\zeta+\zeta_{c}\right)} \left(\boldsymbol{a} | \boldsymbol{c}|\boldsymbol{b}-\boldsymbol{1}_{i}\right)\\ 
+    \left(\boldsymbol{a}+\boldsymbol{1}_{i}|\boldsymbol{c}| \boldsymbol{b}\right)=&\left(G_{i}-A_{i}\right)(\boldsymbol{a}|\boldsymbol{c}| \boldsymbol{b})+\frac{a_i}{2\left(\zeta+\zeta_{c}\right)} \\
+& \times \left(\boldsymbol{a}-\boldsymbol{1}_{i}|\boldsymbol{c}| \boldsymbol{b}\right)+\frac{ b_i}{2\left(\zeta+\zeta_{c}\right)} \left(\boldsymbol{a} | \boldsymbol{c}|\boldsymbol{b}-\boldsymbol{1}_{i}\right)\\
 &+\frac{c_i}{2\left(\zeta+\zeta_{c}\right)}\left(\boldsymbol{a}\left|\boldsymbol{c}-\boldsymbol{1}_{i}\right| \boldsymbol{b}\right)
 \end{aligned}
 \end{equation}
-where $\boldsymbol{G}=\frac{\zeta \boldsymbol{P}+\zeta_{c} \boldsymbol{C}}{\zeta+\zeta_{c}}$. Because we do not have any angular momentum for the `Gaussian orbital' transformed from $1/\sqrt{\boldsymbol{r} - \boldsymbol{r}_l}$,
+where $\boldsymbol{G}=\frac{\zeta \boldsymbol{P}+\zeta_{c} \boldsymbol{C}}{\zeta+\zeta_{c}}$. Because we do not have any angular momentum for the `Gaussian orbital' transformed from $\frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l| }$,
 \begin{equation}
     \begin{aligned}
-    \left(\boldsymbol{a}+\boldsymbol{1}_{i}|\boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}| \boldsymbol{b}\right)= & \left(G_{i}-A_{i}\right)(\boldsymbol{a}|\boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}| \boldsymbol{b})+\frac{a_i}{2\left(\zeta + u^2\right)} \\ 
+    \left(\boldsymbol{a}+\boldsymbol{1}_{i}|\boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}| \boldsymbol{b}\right)= & \left(G_{i}-A_{i}\right)(\boldsymbol{a}|\boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}| \boldsymbol{b})+\frac{a_i}{2\left(\zeta + u^2\right)} \\
     & \times \left(\boldsymbol{a}-\boldsymbol{1}_{i}|\boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}| \boldsymbol{b}\right)+\frac{ b_i}{2\left(\zeta + u^2\right)} \left(\boldsymbol{a} | \boldsymbol{0}_{\boldsymbol{r}_l}^{u^2}|\boldsymbol{b}-\boldsymbol{1}_{i}\right)
     \end{aligned}
 \end{equation}
-where $G_i-A_i$ is 
+where $G_i-A_i$ is
 \begin{equation}
     G_i - A_i = \frac{\beta (B_i-A_i) + u^2 (C_i - A_i)}{\zeta + u^2}, \quad \boldsymbol{C} = \boldsymbol{r}_l
 \end{equation}
-This means when unraveling recursion relations, $\frac{u^2}{\zeta+u^2}$ and $\frac{u^2}{\zeta+u^2}$ will contribute.
+This means when unraveling recursion relations, $\frac{u^2}{\zeta+u^2}$ and $\frac{\beta}{\zeta+u^2}$ will contribute.
 
 Fortunately, this is not the end of the world. We can perform a transformation
 \begin{equation}
     \frac{1}{\zeta + u^2} = \frac{1}{\zeta} \left(1 - \frac{u^2}{\zeta + u^2}\right)
 \end{equation}
-This can convert $\frac{u^2}{\zeta+u^2}$ to $\frac{u^2}{\zeta+u^2}$. This indicates that there will only be some power series of $(\frac{u^2}{\zeta+u^2})^m$ that get multiplied to the final result. Therefore, we can define
+This can convert $\frac{1}{\zeta+u^2}$ to $\frac{u^2}{\zeta+u^2}$. This indicates that there will only be some power series of $(\frac{u^2}{\zeta+u^2})^m$ that get multiplied to the final result. Therefore, we can define
 \begin{equation}
     (\boldsymbol{a} | \frac{1}{|\boldsymbol{r} - \boldsymbol{r}_l|} |\boldsymbol{b} )^{(m)} = \frac{2}{\pi^{1 / 2}} \int_0^\infty \left(\frac{u^2}{\zeta+u^2}\right)^m\, du \, (\boldsymbol{a}|\boldsymbol{0}_{\boldsymbol{r}_2}^{u^2}|\boldsymbol{b})
 \end{equation}
@@ -343,11 +343,11 @@ where $\Gamma(n,x)$ is the incomplete Gamma function. The Gamma functions can be
 \subsection{Electron Repulsion Integral}
 Similar to the nuclear attraction integral, it also introduces the $\frac{1}{r}$ term that will eventually convert into Boys functions. The definition goes as
 \begin{equation}
-    [ij|kl] = \int_{\mathbb{R}^6} d\boldsymbol{r}_1 d\boldsymbol{r}_2\, \phi_i(\boldsymbol{r}_1) \phi_j(\boldsymbol{r}_1) \frac{1}{|\boldsymbol{r}_1 - \boldsymbol{r}_2|} \phi_k(\boldsymbol{r}_2) \phi_l(\boldsymbol{r}_2) 
+    [ij|kl] = \int_{\mathbb{R}^6} d\boldsymbol{r}_1 d\boldsymbol{r}_2\, \phi_i(\boldsymbol{r}_1) \phi_j(\boldsymbol{r}_1) \frac{1}{|\boldsymbol{r}_1 - \boldsymbol{r}_2|} \phi_k(\boldsymbol{r}_2) \phi_l(\boldsymbol{r}_2)
 \end{equation}
-where we can see that, exchanging $\phi_i$ and $\phi_j$ do not change the value of the integral, neither for exchanging $\phi_k$ and $\phi_l$, neither for swapping $\boldsymbol{r}_1$ and $\boldsymbol{r}_2$. Therefore, the ERI has 8-fold symmetry, which can be utilized to reduce computation time.  
+where we can see that, exchanging $\phi_i$ and $\phi_j$ do not change the value of the integral, neither for exchanging $\phi_k$ and $\phi_l$, neither for swapping $\boldsymbol{r}_1$ and $\boldsymbol{r}_2$. Therefore, the ERI has 8-fold symmetry, which can be utilized to reduce computation time.
 
-Reducing this integral to a recursive form will be similar to Nuclear attraction integrals, by transforming $\frac{1}{|\boldsymbol{r}_1 - \boldsymbol{r}_2 |}$ to Gaussian function, and performing recursive algorithms to a linear combination of integrals with no angular momentums. Detailed math can be found in this article\footnote{\emph{Efficient Electronic Integrals and their Generalized Derivatives for Object Oriented Implementations of Electronic Structure Calculations}, by N. FLOCKE, V. LOTRICH, with DOI 10.1002/jcc.21018.}.
+Reducing this integral to a recursive form will be similar to Nuclear attraction integrals, by transforming $\frac{1}{|\boldsymbol{r}_1 - \boldsymbol{r}_2 |}$ to Gaussian function, and performing recursive algorithms to obtain a linear combination of integrals with no angular momentums. Detailed math can be found in this article\footnote{\emph{Efficient Electronic Integrals and their Generalized Derivatives for Object Oriented Implementations of Electronic Structure Calculations}, by N. FLOCKE, V. LOTRICH, with DOI 10.1002/jcc.21018.}.
 
 \subsection{Energy expression, Fock matrix}
 The energy of Hartree Fock is expressed as
