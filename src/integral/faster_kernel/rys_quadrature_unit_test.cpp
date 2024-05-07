@@ -13,12 +13,11 @@ TEST_CASE("ERI kernel") {
     double B10 = arma::randu();
     double B01 = arma::randu();
     double B00 = arma::randu();
-    arma::vec buffer(20);
+    arma::vec buffer(16);
     int a = 3;
     int b = 3;
-
-    electron_repulsive_integral_kernel<3, 3, 1>(buffer.memptr() + 4,
-                                                C00, D00, B01, B10, B00);
+    recursive_kernel<double, 3, 3>(buffer.memptr(), C00, D00, B01,
+                                   B10, B00, 1);
 
     double analytical_value =
         6 * std::pow(B00, 3) + 18 * std::pow(B00, 2) * C00 * D00 +
@@ -27,7 +26,7 @@ TEST_CASE("ERI kernel") {
         C00 * (3 * B10 +
                std::pow(C00, 2)) * D00 * (3 * B01 + std::pow(D00, 2));
 
-    CHECK(buffer((a + 1) * (b + 2) - 1) == analytical_value);
+    CHECK(buffer((a + 1) * (b + 1) - 1) == analytical_value);
 
     CHECK(binomial_coefficient(4, 2) == 6);
     CHECK(binomial_coefficient(6, 2) == 15);

@@ -7,64 +7,59 @@ extern "C" {
 
 namespace hfincpp::integral::faster_kernel::rys_quadrature {
 
-template<int a, int b, int stride>
-void electron_repulsive_integral_kernel(double * cache,
-                                        const double C00,
-                                        const double D00,
-                                        const double B01,
-                                        const double B10,
-                                        const double B00) {
-  int zero = 0;
-  int one = 1;
-  int two = 2;
-  int a_width = a + one;
-  int minus_stride = -stride;
-  int minus_b_stride = a_width * minus_stride;
-  *cache = 1.;
-  cache += stride;
-
-  if constexpr(a>=1) {
-    *cache = C00;
-
-    cache += stride;
-  }
-
-  if constexpr(a>1) {
-    for (int i = two; i <= a; i++) {
-      *cache =
-          C00 * cache[minus_stride] + B10 * (i - one) * cache[two * minus_stride];
-
-      cache += stride;
+template<typename T, int a, int b>
+inline
+void recursive_kernel(double * cache,
+                      const T C00,
+                      const T D00,
+                      const T B01,
+                      const T B10,
+                      const T B00,
+                      const T prefactor = 1) {
+  T second_previous, previous = 0, present = prefactor;
+  cache[0] = prefactor;
+  if constexpr (a > 0) {
+#pragma unroll
+    for (int a_index = 0; a_index < a; a_index++) {
+      second_previous = previous;
+      previous = present;
+      present = B10 * a_index * second_previous + C00 * previous;
+      cache[a_index + 1] = present;
     }
   }
 
-  if constexpr(b>=1) {
-    for (int i = zero; i <= a; i++) {
-      *cache =
-          D00 * cache[minus_b_stride]
-          + B00 * i * cache[minus_stride + minus_b_stride];
+  if constexpr (b > 0) {
+    present = prefactor;
+#pragma unroll
+    for (int b_index = 0; b_index < b; b_index++) {
+      second_previous = previous;
+      previous = present;
+      present = B01 * b_index * second_previous + D00 * previous;
+      cache[(a + 1) * (b_index + 1)] = present;
 
-      cache += stride;
-    }
-  }
-
-  if constexpr(b>1) {
-    for (int j = two; j <= b; j++) {
-      for (int i = zero; i <= a; i++) {
-        *cache =
-            D00 * cache[minus_b_stride]
-            + B01 * (j - one) * cache[two * minus_b_stride]
-            + B00 * i * cache[minus_stride + minus_b_stride];
-
-        cache += stride;
+      if constexpr (a > 0) {
+        T second_previous_along_a, previous_along_a = 0, present_along_a = present;
+#pragma unroll
+        for (int a_index = 0; a_index < a; a_index++) {
+          second_previous_along_a = previous_along_a;
+          previous_along_a = present_along_a;
+          present_along_a =
+              B10 * a_index * second_previous_along_a + C00 * previous_along_a +
+              B00 * (b_index + 1) * cache[a_index + (a + 1) * b_index];
+          cache[a_index + 1 + (a + 1) * (b_index + 1)] = present_along_a;
+        }
       }
     }
   }
-
-
 }
 
-int binomial_coefficient(int n, int r);
+constexpr inline size_t binomial_coefficient(size_t n, size_t k) noexcept {
+  return
+      (k > n) ? 0 :          // out of range
+      (k == 0 || k == n) ? 1 :          // edge
+      (k == 1 || k == n - 1) ? n :          // first
+      binomial_coefficient(n - 1, k - 1) * n / k;   // recursive
+}
 
 double binomial_expand(int i,
                        int a,
@@ -111,8 +106,10 @@ double electron_repulsive_integral(const ERI & eri_info) {
       * eri_info.C.coef
       * eri_info.D.coef;
 
-  assert(arma::sum(eri_info.A.angular) + arma::sum(eri_info.B.angular) == a);
-  assert(arma::sum(eri_info.C.angular) + arma::sum(eri_info.D.angular) == b);
+  assert(
+      arma::sum(eri_info.A.angular) + arma::sum(eri_info.B.angular) == a);
+  assert(
+      arma::sum(eri_info.C.angular) + arma::sum(eri_info.D.angular) == b);
 
   const int n_rys_roots = (a + b) / 2 + 1;
 
@@ -123,13 +120,13 @@ double electron_repulsive_integral(const ERI & eri_info) {
 
   const arma::vec t_squared_list = u / (u + 1.0);
 
-  const arma::vec exponent_weighted_t_squared = t_squared_list / (p+q);
+  const arma::vec exponent_weighted_t_squared = t_squared_list / (p + q);
 
   double C00, D00, B01, B10, B00, PA, PB, QC, QD;
   arma::mat integral_table(a + 1, b + 1);
 
   double rys_sum = 0;
-  for(int i_rys=0; i_rys<n_rys_roots; i_rys++) {
+  for (int i_rys = 0; i_rys < n_rys_roots; i_rys++) {
     double t_squared = exponent_weighted_t_squared(i_rys);
     double weight = w(i_rys);
 
@@ -139,8 +136,8 @@ double electron_repulsive_integral(const ERI & eri_info) {
     B10 = 0.5 / p - B00 * q / p;
     B01 = 0.5 / q - B00 * p / q;
 
-    for(int xyz_index=0; xyz_index<3; xyz_index++) {
-      C00 = -  t_squared * q * from_Q_to_P(xyz_index);
+    for (int xyz_index = 0; xyz_index < 3; xyz_index++) {
+      C00 = -t_squared * q * from_Q_to_P(xyz_index);
       D00 = t_squared * p * from_Q_to_P(xyz_index);
 
       PA = from_A_to_P(xyz_index);
@@ -149,16 +146,16 @@ double electron_repulsive_integral(const ERI & eri_info) {
       QD = from_D_to_Q(xyz_index);
 
       double xyz_component = 0;
-      electron_repulsive_integral_kernel<a,b,1>(integral_table.memptr(),
-                                                C00, D00, B01, B10, B00);
+      recursive_kernel<double, a, b>(integral_table.memptr(),
+                                     C00, D00, B01, B10, B00);
 
       int i = eri_info.A.angular(xyz_index);
       int j = eri_info.B.angular(xyz_index);
       int k = eri_info.C.angular(xyz_index);
       int l = eri_info.D.angular(xyz_index);
 
-      for(int ij=0; ij<=i+j; ij++) {
-        for(int kl=0; kl<=k+l; kl++) {
+      for (int ij = 0; ij <= i + j; ij++) {
+        for (int kl = 0; kl <= k + l; kl++) {
           xyz_component += integral_table(ij, kl)
                            * binomial_expand(ij, i, j, PA, PB)
                            * binomial_expand(kl, k, l, QC, QD);
